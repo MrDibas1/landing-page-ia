@@ -125,10 +125,28 @@ app.post('/webhook', async (req, res) => {
                 // Se o pagamento foi aprovado, enviar para a UTMify
                 if (payment.status === 'approved') {
                     const utmifyToken = process.env.UTMIFY_TOKEN || 'JBzJB6WK1VTtEFv8rYtkflNbxkCABpytA6T0';
+                    
+                    // Mapear o método de pagamento para os valores aceitos pela UTMify
+                    const mpMethod = (payment.payment_method_id || '').toLowerCase();
+                    const mpType = (payment.payment_type_id || '').toLowerCase();
+                    let paymentMethod = 'unknown';
+
+                    if (mpMethod === 'pix') {
+                        paymentMethod = 'pix';
+                    } else if (mpMethod === 'boleto' || mpType === 'ticket') {
+                        paymentMethod = 'boleto';
+                    } else if (mpType === 'credit_card' || mpType === 'debit_card' || mpMethod.includes('card')) {
+                        paymentMethod = 'credit_card';
+                    } else if (mpMethod === 'paypal') {
+                        paymentMethod = 'paypal';
+                    }
+
+                    const priceInCents = Math.round((Number(payment.metadata?.package_price) || payment.transaction_amount || 97) * 100);
+
                     const orderData = {
                         orderId: paymentId.toString(),
                         platform: 'StudioAI',
-                        paymentMethod: payment.payment_method_id || 'pix',
+                        paymentMethod: paymentMethod,
                         status: 'paid',
                         createdAt: payment.date_created || new Date().toISOString(),
                         approvedDate: payment.date_approved || new Date().toISOString(),
@@ -144,8 +162,10 @@ app.post('/webhook', async (req, res) => {
                             {
                                 id: payment.metadata?.package_id || 'ensaio-fotografico-ia',
                                 name: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
+                                planId: payment.metadata?.package_id || 'ensaio-fotografico-ia',
+                                planName: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
                                 quantity: 1,
-                                priceInCents: Math.round((Number(payment.metadata?.package_price) || payment.transaction_amount || 97) * 100)
+                                priceInCents: priceInCents
                             }
                         ],
                         trackingParameters: {
@@ -157,7 +177,9 @@ app.post('/webhook', async (req, res) => {
                             src: payment.metadata?.src || ''
                         },
                         commission: {
-                            totalPriceInCents: Math.round((Number(payment.metadata?.package_price) || payment.transaction_amount || 97) * 100),
+                            totalPriceInCents: priceInCents,
+                            gatewayFeeInCents: 0,
+                            userCommissionInCents: priceInCents,
                             currency: 'BRL'
                         },
                         isTest: payment.live_mode === false
