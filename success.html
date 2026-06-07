@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src="https://estudiofocus.online/metrics/9easbqhehhyfr.js?"+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','ce7kug=GwJELzwoRSVKNDMvXVcqVwRbS0ZZQwwfTwMKHB0BAR4UCRodG0sHHx4PFw1OFgcBT0kUDRwXARIB');</script>
+    <!-- End Google Tag Manager -->
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JHS074JGZM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-JHS074JGZM');
+    </script>
+
+    <!-- UTMify Tracking Script -->
+    <script
+      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+      data-utmify-prevent-xcod-sck
+      data-utmify-prevent-subids
+      async
+      defer
+    ></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento Confirmado — StudioAI</title>
+    <meta name="description" content="Seu ensaio fotográfico profissional foi confirmado. Siga as instruções para enviar suas fotos.">
+
+    <!-- DataLayer -->
+    <script>window.dataLayer = window.dataLayer || [];</script>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 950: '#09090b', 900: '#0f0f11', 800: '#18181b', 700: '#27272a' },
+                        accent: { DEFAULT: '#a855f7', light: '#c084fc', dark: '#7c3aed' },
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                },
+            },
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #09090b;
+            color: #e4e4e7;
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: fall linear forwards;
+            pointer-events: none;
+            z-index: 50;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .glass {
+            background: rgba(24,24,27,0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(63,63,70,0.4);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .check-circle {
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+        @keyframes scaleIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .step-card {
+            animation: fadeUp 0.6s ease-out forwards;
+            opacity: 0;
+        }
+        .step-card:nth-child(1) { animation-delay: 0.3s; }
+        .step-card:nth-child(2) { animation-delay: 0.5s; }
+        .step-card:nth-child(3) { animation-delay: 0.7s; }
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://load.api.estudiofocus.online/ns.html?id=GTM-T8RJG52B" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-12">
+        <div class="max-w-lg w-full text-center">
+            <!-- Success Icon -->
+            <div class="check-circle mb-8">
+                <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-2xl shadow-green-500/30">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Heading -->
+            <h1 class="text-3xl sm:text-4xl font-extrabold mb-3">
+                Pagamento <span class="text-gradient">Confirmado!</span>
+            </h1>
+            <p class="text-zinc-400 text-lg mb-10">
+                Seu ensaio fotográfico profissional já está sendo preparado. 🎉
+            </p>
+
+            <!-- Steps Card -->
+            <div class="glass rounded-2xl p-6 sm:p-8 text-left mb-8">
+                <h2 class="text-lg font-bold mb-6 text-center">Próximos Passos</h2>
+
+                <div class="space-y-5">
+                    <!-- Step 1 -->
+                    <div class="step-card flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
+                            <span class="text-accent font-bold">1</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm mb-1">Abra o WhatsApp</h3>
+                            <p class="text-zinc-400 text-sm">Clique no botão abaixo para ser direcionado ao nosso atendimento. Informe seu nome e o e-mail usado no pagamento.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="step-card flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
+                            <span class="text-accent font-bold">2</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm mb-1">Envie suas Fotos</h3>
+                            <p class="text-zinc-400 text-sm">Envie de <strong class="text-zinc-200">5 a 10 fotos</strong> do seu celular. Selfies e fotos casuais funcionam perfeitamente!</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="step-card flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
+                            <span class="text-accent font-bold">3</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm mb-1">Receba seu Book</h3>
+                            <p class="text-zinc-400 text-sm">Suas fotos profissionais serão entregues em <strong class="text-zinc-200">até 10 horas</strong> diretamente no WhatsApp. ✨</p>
+                        </div>
+                    </div>
+                </div>
+               <!-- CTA WhatsApp -->
+            <!-- 🔄 SUBSTITUA: troque o href pelo seu link de WhatsApp real -->
+            <a href="https://wa.me/5565996443652?text=Olá!%20Acabei%20de%20fazer%20o%20pagamento%20do%20meu%20ensaio%20fotográfico%20por%20IA.%20Meu%20nome%20é%20___."
+               target="_blank" rel="noopener"
+               id="cta-whatsapp-success"
+               class="cta-btn group inline-flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg shadow-xl shadow-green-500/20 hover:shadow-green-500/40 transition-all duration-300 hover:scale-[1.02]">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Enviar Minhas Fotos no WhatsApp
+                <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+
+            <p class="mt-6 text-sm text-zinc-500">
+                Dúvidas? Fale conosco pelo WhatsApp ou responda o e-mail de confirmação.
+            </p>
+        </div>
+    </div>
+
+    <!-- Confetti + Tracking -->
+    <script>
+        // ============================================================
+        // Purchase conversion event
+        // ============================================================
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var paymentId = params.get('payment_id');
+            var status = params.get('status');
+            var reference = params.get('external_reference');
+            var price = parseFloat(params.get('price')) || 97;
+
+            if (status === 'approved' || !status) {
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                    'event': 'purchase',
+                    'payment_id': paymentId || 'unknown',
+                    'status': status || 'approved',
+                    'external_reference': reference || 'unknown',
+                    'value': price,
+                    'currency': 'BRL',
+                    'timestamp': new Date().toISOString()
+                });
+                console.log('[Tracking] purchase event disparado', { paymentId, status, reference, value: price });
+            }
+        })();
+
+        // ============================================================
+        // Dinamically personalize WhatsApp button based on chosen style
+        // ============================================================
+        (function() {
+            var chosenStyle = localStorage.getItem('chosen_style');
+            var waBtn = document.getElementById('cta-whatsapp-success');
+            if (chosenStyle && waBtn) {
+                var baseUrl = 'https://wa.me/5565996443652';
+                var text = 'Olá! Acabei de fazer o pagamento do meu ensaio fotográfico por IA. Meu estilo escolhido foi ' + chosenStyle + '. Meu nome é ___.';
+                waBtn.href = baseUrl + '?text=' + encodeURIComponent(text);
+            }
+        })();
+
+        // ============================================================
+        // CTA tracking & local storage cleanup
+        // ============================================================
+        document.getElementById('cta-whatsapp-success').addEventListener('click', function() {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'post_purchase_whatsapp',
+                'timestamp': new Date().toISOString()
+            });
+            // Cleanup chosen style from localStorage after clicking WhatsApp
+            localStorage.removeItem('chosen_style');
+        });
+
+        // ============================================================
+        // Confetti animation
+        // ============================================================
+        (function() {
+            var colors = ['#a855f7', '#c084fc', '#7c3aed', '#22c55e', '#fbbf24', '#f43f5e', '#3b82f6'];
+            for (var i = 0; i < 60; i++) {
+                var confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = (Math.random() * 8 + 4) + 'px';
+                confetti.style.height = (Math.random() * 8 + 4) + 'px';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                confetti.style.animationDelay = (Math.random() * 3) + 's';
+                document.body.appendChild(confetti);
+            }
+            // Remove confetti after animation
+            setTimeout(function() {
+                document.querySelectorAll('.confetti').forEach(function(el) { el.remove(); });
+            }, 6000);
+        })();
+    </script>
+</body>
+</html>
