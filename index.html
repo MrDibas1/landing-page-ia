@@ -31,6 +31,16 @@
       defer
     ></script>
 
+    <!-- UTMify Pixel Script -->
+    <script>
+      window.pixelId = "6a25edfb3b2ab268fb00c355";
+      var a = document.createElement("script");
+      a.setAttribute("async", "");
+      a.setAttribute("defer", "");
+      a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+      document.head.appendChild(a);
+    </script>
+
     <!-- ============================================================
          PIXEL DO FACEBOOK — Cole seu snippet aqui
          ============================================================ -->
@@ -173,12 +183,12 @@
             z-index: 0;
         }
 
-        /* Gradient mesh hero */
+        /* Gradient mesh hero with romantic pink touch */
         .hero-gradient {
             background:
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 20% 60%, rgba(192, 132, 252, 0.06) 0%, transparent 50%);
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(244, 63, 94, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 20% 60%, rgba(244, 63, 94, 0.05) 0%, transparent 50%);
         }
 
         /* Before/After Slider */
@@ -346,6 +356,32 @@
             transform: scale(1.03);
             filter: brightness(1.1);
         }
+
+        /* Valentine's Custom Animations */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.12); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.12); }
+        }
+        .animate-heartbeat {
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            50% { transform: translateY(-15px) rotate(5deg) scale(1.05); }
+        }
+        @keyframes floatSlower {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            50% { transform: translateY(-25px) rotate(-8deg) scale(1.08); }
+        }
+        .animate-float-slow {
+            animation: floatSlow 8s ease-in-out infinite;
+        }
+        .animate-float-slower {
+            animation: floatSlower 12s ease-in-out infinite;
+        }
     </style>
 </head>
 
@@ -396,14 +432,36 @@
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float"></div>
             <div class="absolute -bottom-20 -left-20 w-72 h-72 bg-accent-dark/5 rounded-full blur-3xl animate-float"
                 style="animation-delay: -3s"></div>
+            
+            <!-- Floating Valentine Hearts -->
+            <div class="absolute inset-0 pointer-events-none z-0">
+                <!-- Heart 1 -->
+                <div class="absolute top-1/4 left-10 w-8 h-8 opacity-[0.18] text-pink-500 animate-float-slow filter blur-[0.5px]">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <!-- Heart 2 -->
+                <div class="absolute bottom-1/3 right-12 w-12 h-12 opacity-[0.12] text-purple-400 animate-float-slower filter blur-[1px]" style="animation-delay: -2s;">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <!-- Heart 3 -->
+                <div class="absolute top-1/3 right-1/4 w-6 h-6 opacity-[0.15] text-rose-500 animate-float-slow" style="animation-delay: -4s;">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <!-- Heart 4 -->
+                <div class="absolute bottom-1/4 left-1/3 w-10 h-10 opacity-[0.08] text-pink-400 animate-float-slower" style="animation-delay: -1s;">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+            </div>
         </div>
-
+ 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
             <div class="max-w-4xl mx-auto text-center">
-                <!-- Badge -->
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 opacity-0 animate-fade-up">
-                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-sm text-zinc-400 font-medium">Vagas limitadas — Resultados em até 10 horas</span>
+                <!-- Valentine's Day Special Badge -->
+                <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-pink-500/25 mb-8 opacity-0 animate-fade-up shadow-[0_0_15px_rgba(244,63,94,0.08)]">
+                    <span class="text-pink-400 animate-heartbeat inline-block">💖</span>
+                    <span class="text-sm text-pink-300 font-bold tracking-wide">Especial Dia dos Namorados</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-700"></span>
+                    <span class="text-xs text-zinc-400 font-medium">Resultados em até 10 horas</span>
                 </div>
 
                 <!-- Headline -->
@@ -854,6 +912,22 @@
 
                 <!-- 🥈 Card 2: Standard (5 Fotos - Mais Popular) -->
                 <div class="glass rounded-3xl p-8 border-accent/40 relative flex flex-col justify-between reveal transition-all duration-300 hover:border-accent shadow-[0_0_30px_rgba(168,85,247,0.15)] md:scale-105">
+                    <!-- Valentine floating decorations for Pack Essencial -->
+                    <div class="absolute inset-0 pointer-events-none z-10 overflow-visible">
+                        <!-- Top Right Heart -->
+                        <div class="absolute -top-4 -right-4 w-7 h-7 text-pink-500 animate-float-slow drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <!-- Bottom Left Heart -->
+                        <div class="absolute -bottom-4 -left-4 w-6 h-6 text-rose-400 animate-float-slower drop-shadow-[0_0_6px_rgba(244,63,94,0.3)]" style="animation-delay: -2.5s;">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <!-- Next to popular badge -->
+                        <div class="absolute -top-2 left-[18%] w-4 h-4 text-pink-400 animate-heartbeat" style="animation-delay: -0.7s;">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                    </div>
+
                     <!-- Popular Badge -->
                     <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full bg-accent text-white text-xs font-black uppercase tracking-wider shadow-md animate-pulse">
                         Mais Popular
