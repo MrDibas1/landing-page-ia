@@ -185,18 +185,38 @@ app.post('/webhook', async (req, res) => {
                         isTest: payment.live_mode === false
                     };
 
-                    // Fazer o POST para a UTMify (usando fetch nativo do Node.js 24)
-                    const response = await fetch('https://api.utmify.com.br/api-credentials/orders', {
+                    // Fazer o POST para a UTMify usando o módulo nativo https para compatibilidade universal
+                    const https = require('https');
+                    const postData = JSON.stringify(orderData);
+
+                    const options = {
+                        hostname: 'api.utmify.com.br',
+                        port: 443,
+                        path: '/api-credentials/orders',
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'x-api-token': utmifyToken
-                        },
-                        body: JSON.stringify(orderData)
+                            'x-api-token': utmifyToken,
+                            'Content-Length': Buffer.byteLength(postData)
+                        }
+                    };
+
+                    const reqPost = https.request(options, (resPost) => {
+                        let dataStr = '';
+                        resPost.on('data', (chunk) => {
+                            dataStr += chunk;
+                        });
+                        resPost.on('end', () => {
+                            console.log(`[UTMify] Envio concluído. Status: ${resPost.statusCode}. Retorno:`, dataStr);
+                        });
                     });
 
-                    const responseText = await response.text();
-                    console.log(`[UTMify] Envio concluído. Status: ${response.status}. Retorno:`, responseText);
+                    reqPost.on('error', (e) => {
+                        console.error('[UTMify] Erro no envio:', e);
+                    });
+
+                    reqPost.write(postData);
+                    reqPost.end();
                 }
             } catch (error) {
                 console.error('[Webhook] Erro ao integrar com UTMify:', error);
