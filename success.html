@@ -2,37 +2,16 @@
 <html lang="pt-BR" class="scroll-smooth">
 <head>
     <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src="https://estudiofocus.online/metrics/9easbqhehhyfr.js?"+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','ce7kug=GwJELzwoRSVKNDMvXVcqVwRbS0ZZQwwfTwMKHB0BAR4UCRodG0sHHx4PFw1OFgcBT0kUDRwXARIB');</script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WN2T26W3');</script>
     <!-- End Google Tag Manager -->
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JHS074JGZM"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
 
-      gtag('config', 'G-JHS074JGZM');
-    </script>
 
-    <!-- UTMify Tracking Script -->
-    <script
-      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-      data-utmify-prevent-xcod-sck
-      data-utmify-prevent-subids
-      async
-      defer
-    ></script>
 
-    <!-- UTMify Pixel Script -->
-    <script>
-      window.pixelId = "6a25edfb3b2ab268fb00c355";
-      var a = document.createElement("script");
-      a.setAttribute("async", "");
-      a.setAttribute("defer", "");
-      a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
-      document.head.appendChild(a);
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pagamento Confirmado — StudioAI</title>
@@ -117,7 +96,8 @@
 
 <body>
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://load.api.estudiofocus.online/ns.html?id=GTM-T8RJG52B" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WN2T26W3"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
         <div class="max-w-lg w-full text-center">
@@ -196,40 +176,86 @@
     <!-- Confetti + Tracking -->
     <script>
         // ============================================================
-        // Purchase conversion event
+        // Purchase conversion event & Dynamic WhatsApp link
         // ============================================================
         (function() {
             var params = new URLSearchParams(window.location.search);
-            var paymentId = params.get('payment_id');
+            var paymentId = params.get('payment_id') || params.get('collection_id');
             var status = params.get('status');
             var reference = params.get('external_reference');
-            var price = parseFloat(params.get('price')) || 97;
+            var price = parseFloat(params.get('price')) 
+                        || parseFloat(sessionStorage.getItem('pending_payment_price')) 
+                        || 97;
 
-            if (status === 'approved' || !status) {
-                window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({
-                    'event': 'purchase',
-                    'payment_id': paymentId || 'unknown',
-                    'status': status || 'approved',
-                    'external_reference': reference || 'unknown',
-                    'value': price,
-                    'currency': 'BRL',
-                    'timestamp': new Date().toISOString()
-                });
-                console.log('[Tracking] purchase event disparado', { paymentId, status, reference, value: price });
-            }
-        })();
+            if (paymentId && (status === 'approved' || !status)) {
+                // Função auxiliar para disparar o dataLayer
+                function firePurchaseEvent(userData) {
+                    window.dataLayer = window.dataLayer || [];
+                    
+                    var purchasePayload = {
+                        'event': 'purchase',
+                        'event_id': paymentId, // Identificador único para desduplicação
+                        'transaction_id': paymentId,
+                        'status': status || 'approved',
+                        'external_reference': reference || 'unknown',
+                        'value': price,
+                        'currency': 'BRL',
+                        'timestamp': new Date().toISOString()
+                    };
 
-        // ============================================================
-        // Dinamically personalize WhatsApp button based on chosen style
-        // ============================================================
-        (function() {
-            var chosenStyle = localStorage.getItem('chosen_style');
-            var waBtn = document.getElementById('cta-whatsapp-success');
-            if (chosenStyle && waBtn) {
-                var baseUrl = 'https://wa.me/5565996443652';
-                var text = 'Olá! Acabei de fazer o pagamento do meu ensaio fotográfico por IA. Meu estilo escolhido foi ' + chosenStyle + '. Meu nome é ___.';
-                waBtn.href = baseUrl + '?text=' + encodeURIComponent(text);
+                    if (userData) {
+                        purchasePayload.user_data = {
+                            email: userData.email || '',
+                            phone: userData.phone || '',
+                            first_name: userData.first_name || '',
+                            last_name: userData.last_name || ''
+                        };
+                    }
+
+                    window.dataLayer.push(purchasePayload);
+                    console.log('[Tracking] purchase event disparado', purchasePayload);
+                    sessionStorage.removeItem('pending_payment_price');
+                }
+
+                // Buscar dados do comprador no back-end
+                fetch('/payment-details/' + paymentId)
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('Status HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        console.log('[API] Detalhes do pagamento carregados:', data);
+                        
+                        // 1. Disparar evento de compra completo no dataLayer com user_data
+                        firePurchaseEvent(data.user_data);
+
+                        // 2. Atualizar link do WhatsApp com o nome do comprador
+                        var chosenStyle = localStorage.getItem('chosen_style');
+                        var waBtn = document.getElementById('cta-whatsapp-success');
+                        if (waBtn) {
+                            var baseUrl = 'https://wa.me/5565996443652';
+                            var fullName = ((data.user_data.first_name || '') + ' ' + (data.user_data.last_name || '')).trim() || '___';
+                            var styleText = chosenStyle ? ' Meu estilo escolhido foi ' + chosenStyle + '.' : '';
+                            var text = 'Olá! Acabei de fazer o pagamento do meu ensaio fotográfico por IA.' + styleText + ' Meu nome é ' + fullName + '.';
+                            waBtn.href = baseUrl + '?text=' + encodeURIComponent(text);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.warn('[API] Erro ao carregar dados do comprador, usando fallback básico:', err);
+                        // Fallback: dispara o evento básico sem user_data para não perder a conversão
+                        firePurchaseEvent(null);
+                        
+                        // Personalizar o botão de WhatsApp apenas com o estilo (como era antes)
+                        var chosenStyle = localStorage.getItem('chosen_style');
+                        var waBtn = document.getElementById('cta-whatsapp-success');
+                        if (chosenStyle && waBtn) {
+                            var baseUrl = 'https://wa.me/5565996443652';
+                            var text = 'Olá! Acabei de fazer o pagamento do meu ensaio fotográfico por IA. Meu estilo escolhido foi ' + chosenStyle + '. Meu nome é ___.';
+                            waBtn.href = baseUrl + '?text=' + encodeURIComponent(text);
+                        }
+                    });
+            } else {
+                console.log('[Tracking] Evento de purchase ignorado (acesso direto ou parâmetros ausentes)');
             }
         })();
 

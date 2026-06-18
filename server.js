@@ -124,6 +124,7 @@ app.post('/webhook', async (req, res) => {
 
                 // Se o pagamento foi aprovado, enviar para a UTMify
                 if (payment.status === 'approved') {
+                    console.log(`[Webhook] Pagamento ${paymentId} aprovado! Enviando para o UTMify...`);
                     const utmifyToken = process.env.UTMIFY_TOKEN || 'JBzJB6WK1VTtEFv8rYtkflNbxkCABpytA6T0';
                     
                     // Mapear o método de pagamento para os valores aceitos pela UTMify
@@ -154,35 +155,24 @@ app.post('/webhook', async (req, res) => {
                             name: payment.payer?.first_name ? `${payment.payer.first_name} ${payment.payer.last_name || ''}`.trim() : 'Cliente',
                             email: payment.payer?.email || 'email@exemplo.com',
                             phone: payment.payer?.phone?.number || '',
-                            document: payment.payer?.identification?.number || '',
-                            country: 'BR',
-                            ip: req.ip || '0.0.0.0'
+                            document: payment.payer?.identification?.number || ''
                         },
-                        products: [
+                        items: [
                             {
-                                id: payment.metadata?.package_id || 'ensaio-fotografico-ia',
-                                name: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
-                                planId: payment.metadata?.package_id || 'ensaio-fotografico-ia',
-                                planName: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
-                                quantity: 1,
-                                priceInCents: priceInCents
+                                id: payment.metadata?.package_id || 'premium',
+                                title: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
+                                price: priceInCents,
+                                qty: 1
                             }
                         ],
-                        trackingParameters: {
-                            utm_source: payment.metadata?.utm_source || '',
-                            utm_campaign: payment.metadata?.utm_campaign || '',
-                            utm_medium: payment.metadata?.utm_medium || '',
-                            utm_content: payment.metadata?.utm_content || '',
-                            utm_term: payment.metadata?.utm_term || '',
+                        utms: {
+                            utmSource: payment.metadata?.utm_source || '',
+                            utmMedium: payment.metadata?.utm_medium || '',
+                            utmCampaign: payment.metadata?.utm_campaign || '',
+                            utmContent: payment.metadata?.utm_content || '',
+                            utmTerm: payment.metadata?.utm_term || '',
                             src: payment.metadata?.src || ''
-                        },
-                        commission: {
-                            totalPriceInCents: priceInCents,
-                            gatewayFeeInCents: 0,
-                            userCommissionInCents: priceInCents,
-                            currency: 'BRL'
-                        },
-                        isTest: payment.live_mode === false
+                        }
                     };
 
                     // Fazer o POST para a UTMify usando o módulo nativo https para compatibilidade universal
@@ -217,14 +207,143 @@ app.post('/webhook', async (req, res) => {
 
                     reqPost.write(postData);
                     reqPost.end();
+
+                    // Enviar para o GTM Server-Side se a URL estiver configurada
+                    const gtmServerUrl = process.env.GTM_SERVER_URL;
+                    if (gtmServerUrl) {
+                        console.log(`[GTM Server] Enviando evento de compra para ${gtmServerUrl}/event...`);
+                        
+                        const gtmEventData = {
+                            event_name: 'purchase',
+                            event_id: paymentId.toString(),
+                            client_id: paymentId.toString(),
+                            user_data: {
+                                email: payment.payer?.email || '',
+                                phone: payment.payer?.phone?.number || '',
+                                first_name: payment.payer?.first_name || '',
+                                last_name: payment.payer?.last_name || '',
+                                cpf: payment.payer?.identification?.number || ''
+                            },
+                            custom_data: {
+                                value: Number(payment.metadata?.package_price) || payment.transaction_amount || 97,
+                                currency: 'BRL',
+                                payment_method: paymentMethod,
+                                package_id: payment.metadata?.package_id || 'premium',
+                                package_title: payment.metadata?.package_title || 'Ensaio Fotográfico por IA'
+                            },
+                            utms: {
+                                utm_source: payment.metadata?.utm_source || '',
+                                utm_medium: payment.metadata?.utm_medium || '',
+                                utm_campaign: payment.metadata?.utm_campaign || '',
+                                utm_content: payment.metadata?.utm_content || '',
+                                utm_term: payment.metadata?.utm_term || '',
+                                src: payment.metadata?.src || ''
+                            }
+                        };
+
+                        const gtmPostData = JSON.stringify(gtmEventData);
+                        
+                        try {
+                            const url = new URL(gtmServerUrl);
+                            const gtmOptions = {
+                                hostname: url.hostname,
+                                port: url.port || (url.protocol === 'https:' ? 443 : 80),
+                                path: '/event',
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Content-Length': Buffer.byteLength(gtmPostData)
+                                }
+                            };
+
+                            const gtmHttps = require(url.protocol === 'https:' ? 'https' : 'http');
+                            const reqGtm = gtmHttps.request(gtmOptions, (resGtm) => {
+                                let gtmResponse = '';
+                                resGtm.on('data', (chunk) => {
+                                    gtmResponse += chunk;
+                                });
+                                resGtm.on('end', () => {
+                                    console.log(`[GTM Server] Evento enviado com sucesso. Status: ${resGtm.statusCode}`);
+                                });
+                            });
+
+                            reqGtm.on('error', (err) => {
+                                console.error('[GTM Server] Erro ao enviar evento:', err.message);
+                            });
+
+                            reqGtm.write(gtmPostData);
+                            reqGtm.end();
+                        } catch (urlErr) {
+                            console.error('[GTM Server] Erro ao processar URL do GTM Server:', urlErr.message);
+                        }
+                    }
                 }
             } catch (error) {
-                console.error('[Webhook] Erro ao integrar com UTMify:', error);
+                console.error('[Webhook] Erro ao processar notificação de pagamento:', error);
             }
         }
     }
 
     res.sendStatus(200);
+});
+
+// ============================================================
+// Endpoint: Obter detalhes simplificados do pagamento aprovado (para front-end)
+// ============================================================
+app.get('/payment-details/:id', async (req, res) => {
+    const paymentId = req.params.id;
+    if (!paymentId) {
+        return res.status(400).json({ error: 'ID do pagamento não fornecido' });
+    }
+
+    try {
+        const { Payment } = require('mercadopago');
+        const paymentClient = new Payment(mpClient);
+        const payment = await paymentClient.get({ id: paymentId });
+
+        // Permitir apenas pagamentos aprovados por motivos de privacidade/segurança
+        if (payment.status !== 'approved') {
+            return res.status(400).json({ error: 'Pagamento não está aprovado' });
+        }
+
+        // Extrair dados do comprador
+        const first_name = payment.payer?.first_name || '';
+        const last_name = payment.payer?.last_name || '';
+        const email = payment.payer?.email || '';
+
+        // Formatar telefone (código do país + DDD + número)
+        let phone = payment.payer?.phone?.number || '';
+        const areaCode = payment.payer?.phone?.area_code || '';
+        if (areaCode && phone && !phone.includes(areaCode)) {
+            phone = `${areaCode}${phone}`;
+        }
+        phone = phone.replace(/\D/g, ''); // Remover caracteres não numéricos
+        if (phone) {
+            if (!phone.startsWith('55') && phone.length <= 11) {
+                phone = `+55${phone}`;
+            } else if (!phone.startsWith('+')) {
+                phone = `+${phone}`;
+            }
+        }
+
+        const price = payment.transaction_amount || Number(payment.metadata?.package_price) || 97;
+        const package_id = payment.metadata?.package_id || 'ensaio-fotografico-ia';
+
+        res.json({
+            payment_id: paymentId,
+            value: price,
+            package_id: package_id,
+            user_data: {
+                email: email,
+                phone: phone,
+                first_name: first_name,
+                last_name: last_name
+            }
+        });
+    } catch (error) {
+        console.error(`[Server] Erro ao buscar detalhes do pagamento ${paymentId}:`, error);
+        res.status(500).json({ error: 'Erro ao buscar detalhes do pagamento', details: error.message });
+    }
 });
 
 // ============================================================

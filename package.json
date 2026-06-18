@@ -12,5 +12,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mercadopago": "^2.0.15"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2"
   }
 }
