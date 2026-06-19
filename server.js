@@ -37,10 +37,17 @@ app.post('/create-preference', async (req, res) => {
     try {
         const { packageId, title, price, utms } = req.body;
 
-        // Definir valores padrão caso não sejam enviados (retrocompatibilidade)
+        // Tabela de preços oficiais no back-end para evitar spoofing/adulteração no front-end
+        const packagePrices = {
+            'basico_3': 29.99,
+            'standard_5': 59.99,
+            'premium_10': 89.99
+        };
+
+        const itemId = packageId || 'basico_3';
         const itemTitle = title || 'Ensaio Fotográfico Profissional por IA';
-        const itemPrice = price || 97;
-        const itemId = packageId || 'ensaio-fotografico-ia';
+        // Enforça o preço correto com base no packageId ou usa o price/fallback se for um id desconhecido
+        const itemPrice = packagePrices[itemId] || price || 29.99;
 
         const preferenceData = {
             items: [
@@ -100,6 +107,23 @@ app.post('/create-preference', async (req, res) => {
     }
 });
 
+// Auxiliar: Formatar data para o padrão exigido pela UTMify (YYYY-MM-DD HH:MM:SS) em UTC 0
+function formatUTMifyDate(dateStr) {
+    if (!dateStr) return new Date().toISOString().replace('T', ' ').substring(0, 19);
+    try {
+        const date = new Date(dateStr);
+        const yyyy = date.getUTCFullYear();
+        const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(date.getUTCDate()).padStart(2, '0');
+        const hh = String(date.getUTCHours()).padStart(2, '0');
+        const min = String(date.getUTCMinutes()).padStart(2, '0');
+        const ss = String(date.getUTCSeconds()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+    } catch (e) {
+        return new Date().toISOString().replace('T', ' ').substring(0, 19);
+    }
+}
+
 // ============================================================
 // Endpoint: Webhook (para notificações do Mercado Pago)
 // ============================================================
@@ -142,36 +166,47 @@ app.post('/webhook', async (req, res) => {
                         paymentMethod = 'paypal';
                     }
 
-                    const priceInCents = Math.round((Number(payment.metadata?.package_price) || payment.transaction_amount || 97) * 100);
+                    const priceInCents = Math.round((Number(payment.metadata?.package_price) || payment.transaction_amount || 29.99) * 100);
+                    const gatewayFeeInCents = Math.round(priceInCents * 0.0499); // Taxa aproximada do Mercado Pago (4.99%)
+                    const userCommissionInCents = priceInCents - gatewayFeeInCents;
 
                     const orderData = {
                         orderId: paymentId.toString(),
                         platform: 'StudioAI',
                         paymentMethod: paymentMethod,
                         status: 'paid',
-                        createdAt: payment.date_created || new Date().toISOString(),
-                        approvedDate: payment.date_approved || new Date().toISOString(),
+                        createdAt: formatUTMifyDate(payment.date_created),
+                        approvedDate: formatUTMifyDate(payment.date_approved),
+                        isTest: process.env.UTMIFY_IS_TEST === 'true',
                         customer: {
                             name: payment.payer?.first_name ? `${payment.payer.first_name} ${payment.payer.last_name || ''}`.trim() : 'Cliente',
                             email: payment.payer?.email || 'email@exemplo.com',
                             phone: payment.payer?.phone?.number || '',
-                            document: payment.payer?.identification?.number || ''
+                            document: payment.payer?.identification?.number || '',
+                            country: 'BR'
                         },
-                        items: [
+                        products: [
                             {
                                 id: payment.metadata?.package_id || 'premium',
-                                title: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
-                                price: priceInCents,
-                                qty: 1
+                                name: payment.metadata?.package_title || 'Ensaio Fotográfico por IA',
+                                planId: null,
+                                planName: null,
+                                quantity: 1,
+                                priceInCents: priceInCents
                             }
                         ],
-                        utms: {
-                            utmSource: payment.metadata?.utm_source || '',
-                            utmMedium: payment.metadata?.utm_medium || '',
-                            utmCampaign: payment.metadata?.utm_campaign || '',
-                            utmContent: payment.metadata?.utm_content || '',
-                            utmTerm: payment.metadata?.utm_term || '',
-                            src: payment.metadata?.src || ''
+                        trackingParameters: {
+                            utm_source: payment.metadata?.utm_source || null,
+                            utm_medium: payment.metadata?.utm_medium || null,
+                            utm_campaign: payment.metadata?.utm_campaign || null,
+                            utm_content: payment.metadata?.utm_content || null,
+                            utm_term: payment.metadata?.utm_term || null,
+                            src: payment.metadata?.src || null
+                        },
+                        commission: {
+                            totalPriceInCents: priceInCents,
+                            gatewayFeeInCents: gatewayFeeInCents,
+                            userCommissionInCents: userCommissionInCents
                         }
                     };
 
@@ -225,7 +260,7 @@ app.post('/webhook', async (req, res) => {
                                 cpf: payment.payer?.identification?.number || ''
                             },
                             custom_data: {
-                                value: Number(payment.metadata?.package_price) || payment.transaction_amount || 97,
+                                value: Number(payment.metadata?.package_price) || payment.transaction_amount || 29.99,
                                 currency: 'BRL',
                                 payment_method: paymentMethod,
                                 package_id: payment.metadata?.package_id || 'premium',
@@ -326,7 +361,7 @@ app.get('/payment-details/:id', async (req, res) => {
             }
         }
 
-        const price = payment.transaction_amount || Number(payment.metadata?.package_price) || 97;
+        const price = payment.transaction_amount || Number(payment.metadata?.package_price) || 29.99;
         const package_id = payment.metadata?.package_id || 'ensaio-fotografico-ia';
 
         res.json({

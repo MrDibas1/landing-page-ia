@@ -14,7 +14,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento Confirmado — StudioAI</title>
+    <title>Pagamento Confirmado — StudioAi</title>
     <meta name="description" content="Seu ensaio fotográfico profissional foi confirmado. Siga as instruções para enviar suas fotos.">
 
     <!-- DataLayer -->
@@ -185,7 +185,7 @@
             var reference = params.get('external_reference');
             var price = parseFloat(params.get('price')) 
                         || parseFloat(sessionStorage.getItem('pending_payment_price')) 
-                        || 97;
+                        || 29.99;
 
             if (paymentId && (status === 'approved' || !status)) {
                 // Função auxiliar para disparar o dataLayer
@@ -225,6 +225,11 @@
                     })
                     .then(function(data) {
                         console.log('[API] Detalhes do pagamento carregados:', data);
+                        
+                        // Atualizar com o preço retornado pelo back-end se disponível
+                        if (data && data.value) {
+                            price = parseFloat(data.value);
+                        }
                         
                         // 1. Disparar evento de compra completo no dataLayer com user_data
                         firePurchaseEvent(data.user_data);

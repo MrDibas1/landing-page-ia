@@ -6,7 +6,7 @@ const localtunnel = require('localtunnel');
 const https = require('https');
 
 const PORT = process.env.PORT || 3000;
-const SUBDOMAIN = 'ensaio-ia-kaue-dev';
+const SUBDOMAIN = 'ensaio-ia-kaue-v2';
 
 // Manter o processo Node.js ativo indefinidamente
 setInterval(() => {}, 1000 * 60 * 60);

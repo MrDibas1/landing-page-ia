@@ -162,12 +162,12 @@
             z-index: 0;
         }
 
-        /* Gradient mesh hero with romantic pink touch */
+        /* Gradient mesh hero */
         .hero-gradient {
             background:
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(244, 63, 94, 0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 20% 60%, rgba(244, 63, 94, 0.05) 0%, transparent 50%);
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(168, 85, 247, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 20% 60%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
         }
 
         /* Before/After Slider */
@@ -336,31 +336,7 @@
             filter: brightness(1.1);
         }
 
-        /* Valentine's Custom Animations */
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            25% { transform: scale(1.12); }
-            50% { transform: scale(1); }
-            75% { transform: scale(1.12); }
-        }
-        .animate-heartbeat {
-            animation: heartbeat 1.5s ease-in-out infinite;
-        }
-
-        @keyframes floatSlow {
-            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-            50% { transform: translateY(-15px) rotate(5deg) scale(1.05); }
-        }
-        @keyframes floatSlower {
-            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-            50% { transform: translateY(-25px) rotate(-8deg) scale(1.08); }
-        }
-        .animate-float-slow {
-            animation: floatSlow 8s ease-in-out infinite;
-        }
-        .animate-float-slower {
-            animation: floatSlower 12s ease-in-out infinite;
-        }
+        /* Animations */
     </style>
 </head>
 
@@ -377,19 +353,66 @@
     <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16 sm:h-20">
-                <a href="#" class="flex items-center gap-2 group">
-                    <div
-                        class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
+                        <svg class="w-full h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#a855f7" />
+                                    <stop offset="40%" stop-color="#7c3aed" />
+                                    <stop offset="100%" stop-color="#18103c" />
+                                </linearGradient>
+                                <linearGradient id="lens-refl" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#c084fc" stop-opacity="0.8" />
+                                    <stop offset="35%" stop-color="#ec4899" stop-opacity="0.4" />
+                                    <stop offset="70%" stop-color="#3b82f6" stop-opacity="0.2" />
+                                    <stop offset="100%" stop-color="#0f0926" stop-opacity="0.9" />
+                                </linearGradient>
+                                <radialGradient id="lens-glass" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.5" />
+                                    <stop offset="70%" stop-color="#0f0926" stop-opacity="0.8" />
+                                    <stop offset="100%" stop-color="#090514" stop-opacity="1" />
+                                </radialGradient>
+                                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="1" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                            <rect width="100" height="100" rx="26" fill="url(#bg-grad)" />
+                            <g stroke="#c084fc" stroke-width="0.75" opacity="0.6">
+                                <path d="M 50 12 L 69 17.1 M 69 17.1 L 83.1 31 M 83.1 31 L 88 50 M 88 50 L 83.1 69 M 83.1 69 L 69 83 M 69 83 L 50 88 M 50 88 L 31 83 M 31 83 L 16.9 69 M 16.9 69 L 12 50 M 12 50 L 16.9 31 M 16.9 31 L 31 17.1 M 31 17.1 L 50 12 Z M 50 12 L 83.1 31 M 83.1 31 L 83.1 69 M 83.1 69 L 50 88 M 50 88 L 16.9 69 M 16.9 69 L 16.9 31 M 16.9 31 L 50 12 Z M 69 17.1 L 88 50 M 88 50 L 69 83 M 69 83 L 31 83 M 31 83 L 12 50 M 12 50 L 31 17.1 M 31 17.1 L 69 17.1 Z" />
+                                <path d="M 50 12 L 50 24 M 69 17.1 L 63 32.5 M 83.1 31 L 71.2 37.7 M 88 50 L 76 50 M 83.1 69 L 71.2 62.3 M 69 83 L 63 67.5 M 50 88 L 50 76 M 31 83 L 37 67.5 M 16.9 69 L 28.8 62.3 M 12 50 L 24 50 M 16.9 31 L 28.8 37.7 M 31 17.1 L 37 32.5 M 50 12 Z M 50 12 L 63 32.5 M 69 17.1 L 71.2 37.7 M 83.1 31 L 76 50 M 88 50 L 71.2 62.3 M 83.1 69 L 63 67.5 M 69 83 L 50 76 M 50 88 L 37 67.5 M 31 83 L 28.8 62.3 M 16.9 69 L 24 50 M 12 50 L 28.8 37.7 M 16.9 31 L 37 32.5 M 31 17.1 L 50 24 M 50 12 L 37 32.5" />
+                            </g>
+                            <circle cx="50" cy="50" r="26" fill="url(#lens-glass)" stroke="#c084fc" stroke-width="1.5" />
+                            <circle cx="50" cy="50" r="20" stroke="#818cf8" stroke-width="1" opacity="0.6" />
+                            <circle cx="50" cy="50" r="14" fill="#0c0a1c" stroke="#c084fc" stroke-width="1" />
+                            <circle cx="50" cy="50" r="10" fill="url(#lens-refl)" />
+                            <circle cx="45" cy="45" r="3.5" fill="#FFFFFF" opacity="0.75" />
+                            <circle cx="55" cy="55" r="1.5" fill="#3B82F6" opacity="0.5" />
+                            <g fill="#c084fc" filter="url(#glow)">
+                                <circle cx="50" cy="12" r="2" />
+                                <circle cx="69" cy="17.1" r="2" />
+                                <circle cx="83.1" cy="31" r="2" />
+                                <circle cx="88" cy="50" r="2" />
+                                <circle cx="83.1" cy="69" r="2" />
+                                <circle cx="69" cy="83" r="2" />
+                                <circle cx="50" cy="88" r="2" />
+                                <circle cx="31" cy="83" r="2" />
+                                <circle cx="16.9" cy="69" r="2" />
+                                <circle cx="12" cy="50" r="2" />
+                                <circle cx="16.9" cy="31" r="2" />
+                                <circle cx="31" cy="17.1" r="2" />
+                            </g>
                         </svg>
                     </div>
-                    <span
-                        class="text-lg font-bold text-white group-hover:text-accent-light transition-colors">Studio<span
-                            class="text-gradient">AI</span></span>
+                    <span class="text-xl font-bold text-white group-hover:text-accent-light transition-colors tracking-tight flex items-center">
+                        Studio<span class="text-gradient relative">Ai<span class="absolute -top-1.5 -right-2 text-accent flex items-center justify-center pointer-events-none">
+                            <svg class="w-2.5 h-2.5 text-accent animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" />
+                                <circle cx="12" cy="12" r="3" fill="currentColor" />
+                            </svg>
+                        </span></span>
+                    </span>
                 </a>
                 <a href="#cta-final" id="cta-nav"
                     class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border border-accent/30 text-accent-light text-sm font-semibold hover:bg-accent/20 transition-all duration-300">
@@ -413,33 +436,15 @@
             <div class="absolute -bottom-20 -left-20 w-72 h-72 bg-accent-dark/5 rounded-full blur-3xl animate-float"
                 style="animation-delay: -3s"></div>
             
-            <!-- Floating Valentine Hearts -->
-            <div class="absolute inset-0 pointer-events-none z-0">
-                <!-- Heart 1 -->
-                <div class="absolute top-1/4 left-10 w-8 h-8 opacity-[0.18] text-pink-500 animate-float-slow filter blur-[0.5px]">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </div>
-                <!-- Heart 2 -->
-                <div class="absolute bottom-1/3 right-12 w-12 h-12 opacity-[0.12] text-purple-400 animate-float-slower filter blur-[1px]" style="animation-delay: -2s;">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </div>
-                <!-- Heart 3 -->
-                <div class="absolute top-1/3 right-1/4 w-6 h-6 opacity-[0.15] text-rose-500 animate-float-slow" style="animation-delay: -4s;">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </div>
-                <!-- Heart 4 -->
-                <div class="absolute bottom-1/4 left-1/3 w-10 h-10 opacity-[0.08] text-pink-400 animate-float-slower" style="animation-delay: -1s;">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </div>
-            </div>
+
         </div>
  
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
             <div class="max-w-4xl mx-auto text-center">
-                <!-- Valentine's Day Special Badge -->
-                <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-pink-500/25 mb-8 opacity-0 animate-fade-up shadow-[0_0_15px_rgba(244,63,94,0.08)]">
-                    <span class="text-pink-400 animate-heartbeat inline-block">💖</span>
-                    <span class="text-sm text-pink-300 font-bold tracking-wide">Especial Dia dos Namorados</span>
+                <!-- Premium StudioAI Badge -->
+                <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8 opacity-0 animate-fade-up shadow-[0_0_15px_rgba(168,85,247,0.08)]">
+                    <span class="text-accent inline-block">⚡</span>
+                    <span class="text-sm text-accent-light font-bold tracking-wide">Book Fotográfico Premium</span>
                     <span class="w-1.5 h-1.5 rounded-full bg-zinc-700"></span>
                     <span class="text-xs text-zinc-400 font-medium">Resultados em até 10 horas</span>
                 </div>
@@ -854,7 +859,10 @@
                         <p class="text-zinc-500 text-sm mb-6">Essencial para começar ou testar a IA</p>
                         
                         <div class="mb-6">
-                            <span class="text-3xl font-black text-white">R$ 1,00</span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-sm text-zinc-500 line-through font-medium">R$ 59,99</span>
+                                <span class="text-3xl font-black text-white">R$ 29,99</span>
+                            </div>
                             <span class="text-zinc-500 text-sm block mt-1">Pagamento único</span>
                         </div>
                         
@@ -889,10 +897,10 @@
                     </div>
                     
                     <button type="button" 
-                        class="package-checkout-btn group w-full py-4 rounded-xl bg-dark-800 border border-zinc-700 text-white font-bold transition-all duration-300 hover:bg-zinc-800 hover:scale-[1.02] flex items-center justify-center gap-2"
+                        class="package-checkout-btn group w-full py-4 rounded-xl bg-gradient-to-r from-accent/80 to-accent-dark/80 hover:from-accent hover:to-accent-dark border border-accent/20 text-white font-bold transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                         data-package-id="basico_3" 
                         data-package-title="Pack 3 Fotos + 1 Brinde" 
-                        data-package-price="1.00">
+                        data-package-price="29.99">
                         Adquirir Pack 3 Fotos
                         <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -907,22 +915,7 @@
                 </div>
 
                 <!-- 🥈 Card 2: Standard (5 Fotos - Mais Popular) -->
-                <div class="glass rounded-3xl p-8 border-accent/40 relative flex flex-col justify-between reveal transition-all duration-300 hover:border-accent shadow-[0_0_30px_rgba(168,85,247,0.15)] md:scale-105">
-                    <!-- Valentine floating decorations for Pack Essencial -->
-                    <div class="absolute inset-0 pointer-events-none z-10 overflow-visible">
-                        <!-- Top Right Heart -->
-                        <div class="absolute -top-4 -right-4 w-7 h-7 text-pink-500 animate-float-slow drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        </div>
-                        <!-- Bottom Left Heart -->
-                        <div class="absolute -bottom-4 -left-4 w-6 h-6 text-rose-400 animate-float-slower drop-shadow-[0_0_6px_rgba(244,63,94,0.3)]" style="animation-delay: -2.5s;">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        </div>
-                        <!-- Next to popular badge -->
-                        <div class="absolute -top-2 left-[18%] w-4 h-4 text-pink-400 animate-heartbeat" style="animation-delay: -0.7s;">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        </div>
-                    </div>
+                <div class="glass rounded-3xl p-8 border-accent/40 relative flex flex-col justify-between reveal transition-all duration-300 hover:border-accent shadow-[0_0_30px_rgba(168,85,247,0.25)] md:scale-105">
 
                     <!-- Popular Badge -->
                     <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full bg-accent text-white text-xs font-black uppercase tracking-wider shadow-md animate-pulse">
@@ -934,7 +927,10 @@
                         <p class="text-zinc-400 text-sm mb-6">Perfeito para LinkedIn e Redes Sociais</p>
                         
                         <div class="mb-6">
-                            <span class="text-4xl font-black text-white">R$ 1,01</span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-sm text-zinc-400 line-through font-medium">R$ 119,99</span>
+                                <span class="text-4xl font-black text-white">R$ 59,99</span>
+                            </div>
                             <span class="text-zinc-400 text-sm block mt-1">Pagamento único</span>
                         </div>
                         
@@ -969,10 +965,10 @@
                     </div>
                     
                     <button type="button" 
-                        class="package-checkout-btn group w-full py-4 sm:py-5 rounded-xl bg-gradient-to-r from-accent to-accent-dark text-white font-extrabold shadow-lg shadow-accent/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-accent/50 flex items-center justify-center gap-2"
+                        class="package-checkout-btn group w-full py-4 sm:py-5 rounded-xl btn-shimmer animate-pulse-glow text-white font-extrabold shadow-lg shadow-accent/40 transition-all duration-300 hover:scale-[1.05] hover:shadow-accent/70 flex items-center justify-center gap-2"
                         data-package-id="standard_5" 
                         data-package-title="Pack Essencial + 3 Brindes" 
-                        data-package-price="1.01">
+                        data-package-price="59.99">
                         Adquirir Pack 5 Fotos
                         <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -993,7 +989,10 @@
                         <p class="text-zinc-500 text-sm mb-6">Para quem busca um book completo</p>
                         
                         <div class="mb-6">
-                            <span class="text-3xl font-black text-white">R$ 1,02</span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-sm text-zinc-500 line-through font-medium">R$ 179,99</span>
+                                <span class="text-3xl font-black text-white">R$ 89,99</span>
+                            </div>
                             <span class="text-zinc-500 text-sm block mt-1">Pagamento único</span>
                         </div>
                         
@@ -1028,10 +1027,10 @@
                     </div>
                     
                     <button type="button" 
-                        class="package-checkout-btn group w-full py-4 rounded-xl bg-dark-800 border border-zinc-700 text-white font-bold transition-all duration-300 hover:bg-zinc-800 hover:scale-[1.02] flex items-center justify-center gap-2"
+                        class="package-checkout-btn group w-full py-4 rounded-xl bg-gradient-to-r from-accent/80 to-accent-dark/80 hover:from-accent hover:to-accent-dark border border-accent/20 text-white font-bold transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                         data-package-id="premium_10" 
                         data-package-title="Pack 10 Fotos + 5 Brindes" 
-                        data-package-price="1.02">
+                        data-package-price="89.99">
                         Adquirir Pack 10 Fotos
                         <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -1155,7 +1154,7 @@
     <footer class="border-t border-dark-700/50 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-sm text-zinc-600">
-                © <span id="footer-year">2026</span> StudioAI — Ensaios Fotográficos por Inteligência Artificial. Todos
+                © <span id="footer-year">2026</span> StudioAi — Ensaios Fotográficos por Inteligência Artificial. Todos
                 os direitos reservados.
             </p>
         </div>
