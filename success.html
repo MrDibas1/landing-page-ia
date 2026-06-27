@@ -188,35 +188,46 @@
                         || 29.99;
 
             // Função auxiliar para disparar o dataLayer
-            function firePurchaseEvent(userData) {
+            function firePurchaseEvent(payment) {
                 window.dataLayer = window.dataLayer || [];
-                
+                var eventId = payment.event_id || ('mp_' + payment.payment_id);
+                var storageKey = 'purchase_sent_' + eventId;
+                if (localStorage.getItem(storageKey)) {
+                    console.log('[Tracking] Purchase já enviado neste navegador:', eventId);
+                    return false;
+                }
+
                 var purchasePayload = {
                     'event': 'purchase',
-                    'event_id': paymentId || 'fallback_payment_id', // Identificador único para desduplicação
-                    'transaction_id': paymentId || 'fallback_payment_id',
-                    'status': status || 'approved',
-                    'external_reference': reference || 'unknown',
-                    'value': price,
+                    'event_id': eventId,
+                    'payment_id': String(payment.payment_id),
+                    'transaction_id': String(payment.transaction_id || payment.payment_id),
+                    'status': 'approved',
+                    'external_reference': payment.external_reference || '',
+                    'value': Number(payment.value),
                     'currency': 'BRL',
+                    'package_id': payment.package_id || '',
+                    'package_title': payment.package_title || '',
                     'timestamp': new Date().toISOString()
                 };
 
-                if (userData) {
+                if (payment.user_data) {
                     purchasePayload.user_data = {
-                        email: userData.email || '',
-                        phone: userData.phone || '',
-                        first_name: userData.first_name || '',
-                        last_name: userData.last_name || ''
+                        email: payment.user_data.email || '',
+                        phone: payment.user_data.phone || '',
+                        first_name: payment.user_data.first_name || '',
+                        last_name: payment.user_data.last_name || ''
                     };
                 }
 
                 window.dataLayer.push(purchasePayload);
+                localStorage.setItem(storageKey, new Date().toISOString());
                 console.log('[Tracking] purchase event disparado', purchasePayload);
                 sessionStorage.removeItem('pending_payment_price');
+                return true;
             }
 
-            if (paymentId && (status === 'approved' || !status)) {
+            if (paymentId) {
                 // Buscar dados do comprador no back-end
                 fetch('/payment-details/' + paymentId)
                     .then(function(res) {
@@ -231,8 +242,12 @@
                             price = parseFloat(data.value);
                         }
                         
-                        // 1. Disparar evento de compra completo no dataLayer com user_data
-                        firePurchaseEvent(data.user_data);
+                        if (!data || data.status !== 'approved') {
+                            throw new Error('Pagamento não confirmado pelo gateway');
+                        }
+
+                        // Disparar somente depois de o backend confirmar o pagamento no Mercado Pago.
+                        firePurchaseEvent(data);
 
                         // 2. Atualizar link do WhatsApp com o nome do comprador
                         var chosenStyle = localStorage.getItem('chosen_style');
@@ -246,9 +261,7 @@
                         }
                     })
                     .catch(function(err) {
-                        console.warn('[API] Erro ao carregar dados do comprador, usando fallback básico:', err);
-                        // Fallback: dispara o evento básico sem user_data para não perder a conversão
-                        firePurchaseEvent(null);
+                        console.warn('[Tracking] Purchase não disparado: pagamento sem confirmação válida.', err);
                         
                         // Personalizar o botão de WhatsApp apenas com o estilo (como era antes)
                         var chosenStyle = localStorage.getItem('chosen_style');
@@ -260,8 +273,7 @@
                         }
                     });
             } else {
-                console.log('[Tracking] Parâmetros ausentes ou acesso direto, disparando purchase com valores de fallback.');
-                firePurchaseEvent(null);
+                console.log('[Tracking] Acesso sem payment_id: nenhum Purchase foi disparado.');
                 
                 // Personalizar o botão de WhatsApp apenas com o estilo (como era antes)
                 var chosenStyle = localStorage.getItem('chosen_style');

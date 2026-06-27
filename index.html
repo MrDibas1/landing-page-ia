@@ -1202,8 +1202,14 @@
                         loadingEl.classList.remove('hidden');
                     }
 
-                    // Capture UTMs for UTMify
+                    // Captura de atribuição: usada no dashboard da UTMify e no Purchase server-side.
                     var urlParams = new URLSearchParams(window.location.search);
+                    var attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'fbclid'];
+                    attributionKeys.forEach(function (key) {
+                        var currentValue = urlParams.get(key);
+                        if (currentValue) localStorage.setItem(key, currentValue);
+                    });
+
                     var utms = {
                         utm_source: urlParams.get('utm_source') || localStorage.getItem('utm_source') || '',
                         utm_medium: urlParams.get('utm_medium') || localStorage.getItem('utm_medium') || '',
@@ -1213,15 +1219,22 @@
                         src: urlParams.get('src') || localStorage.getItem('src') || ''
                     };
 
-                    // Persist UTMs in localStorage
-                    if (urlParams.get('utm_source')) {
-                        localStorage.setItem('utm_source', utms.utm_source);
-                        localStorage.setItem('utm_medium', utms.utm_medium);
-                        localStorage.setItem('utm_campaign', utms.utm_campaign);
-                        localStorage.setItem('utm_content', utms.utm_content);
-                        localStorage.setItem('utm_term', utms.utm_term);
-                        localStorage.setItem('src', utms.src);
+                    function cookieValue(name) {
+                        var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
+                        return match ? decodeURIComponent(match[1]) : '';
                     }
+
+                    var fbclid = urlParams.get('fbclid') || localStorage.getItem('fbclid') || '';
+                    var fbc = cookieValue('_fbc');
+                    if (!fbc && fbclid) fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+                    var gaCookie = cookieValue('_ga');
+                    var gaParts = gaCookie ? gaCookie.split('.') : [];
+                    var tracking = {
+                        fbp: cookieValue('_fbp'),
+                        fbc: fbc,
+                        ga_client_id: gaParts.length >= 4 ? gaParts.slice(-2).join('.') : '',
+                        page_location: window.location.href
+                    };
 
                     // Create preference on backend with package details and UTM parameters
                     fetch('/create-preference', {
@@ -1231,7 +1244,8 @@
                             packageId: packageId,
                             title: title,
                             price: price,
-                            utms: utms
+                            utms: utms,
+                            tracking: tracking
                         })
                     })
                         .then(function (res) { return res.json(); })

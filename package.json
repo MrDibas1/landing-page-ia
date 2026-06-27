@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:tracking": "node test-tracking.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

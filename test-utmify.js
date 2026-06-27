@@ -1,7 +1,8 @@
 const https = require('https');
 require('dotenv').config();
 
-const utmifyToken = process.env.UTMIFY_TOKEN || 'JBzJB6WK1VTtEFv8rYtkflNbxkCABpytA6T0';
+const utmifyToken = process.env.UTMIFY_TOKEN;
+if (!utmifyToken) throw new Error('Defina UTMIFY_TOKEN antes de executar este teste.');
 
 // Format date helper: YYYY-MM-DD HH:MM:SS
 function formatDate(dateStr) {
