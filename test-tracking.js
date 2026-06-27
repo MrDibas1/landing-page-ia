@@ -6,20 +6,37 @@ const http = require('http');
 const testRuntimeDir = path.join(__dirname, '.runtime-test');
 process.env.RUNTIME_DATA_DIR = testRuntimeDir;
 
-const { getPurchaseEventId, paymentTracking, runIdempotent, sendPurchaseToGtmServer } = require('./server');
+const {
+    getPurchaseEventId,
+    paymentTracking,
+    normalizeBrazilPhone,
+    normalizeExternalId,
+    runIdempotent,
+    sendPurchaseToGtmServer
+} = require('./server');
 
 async function main() {
     await fs.promises.rm(testRuntimeDir, { recursive: true, force: true });
 
     const successHtml = await fs.promises.readFile(path.join(__dirname, 'success.html'), 'utf8');
+    const indexHtml = await fs.promises.readFile(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(!successHtml.includes('fallback_payment_id'), 'A página não pode fabricar um ID de compra');
     assert.ok(!successHtml.includes('firePurchaseEvent(null)'), 'A página não pode disparar Purchase sem pagamento');
     assert.ok(successHtml.includes("data.status !== 'approved'"), 'A aprovação do gateway deve ser obrigatória');
     assert.ok(successHtml.includes("'payment_id': String(payment.payment_id)"), 'O contrato deve expor payment_id');
     assert.ok(successHtml.includes("'event_id': eventId"), 'O contrato deve expor event_id determinístico');
     assert.ok(successHtml.includes("localStorage.getItem(storageKey)"), 'O navegador deve bloquear reenvio local');
+    assert.ok(successHtml.includes("external_id: payment.user_data.external_id"), 'O Purchase web deve expor external_id');
+    assert.ok(indexHtml.includes('id="whatsapp-checkout-modal"'), 'O checkout deve solicitar o WhatsApp de entrega');
+    assert.ok(indexHtml.includes('customer: {'), 'O WhatsApp deve ser enviado dentro do contrato customer');
+    assert.ok(indexHtml.includes("var storageKey = 'studioai_external_id'"), 'O external_id deve usar uma chave estável');
+    assert.ok(indexHtml.includes('localStorage.setItem(storageKey, externalId)'), 'O external_id deve persistir no navegador');
 
     assert.strictEqual(getPurchaseEventId(12345), 'mp_12345');
+    assert.strictEqual(normalizeBrazilPhone('(11) 99999-9999'), '5511999999999');
+    assert.strictEqual(normalizeBrazilPhone('+55 11 99999-9999'), '5511999999999');
+    assert.strictEqual(normalizeBrazilPhone('123'), '');
+    assert.strictEqual(normalizeExternalId(' web_cliente-123! '), 'web_cliente-123');
     assert.deepStrictEqual(
         paymentTracking(
             { metadata: { utm_source: 'metadata', fbp: 'fbp-meta' } },
@@ -34,7 +51,9 @@ async function main() {
             src: '',
             fbp: 'fbp-meta',
             fbc: 'fbc-saved',
-            ga_client_id: ''
+            ga_client_id: '',
+            customer_phone: '',
+            external_id: ''
         }
     );
 
@@ -96,7 +115,9 @@ async function main() {
         fbc: 'fb.1.123.click',
         page_location: 'https://example.com/oferta',
         user_agent: 'Test Browser',
-        client_ip: '203.0.113.10'
+        client_ip: '203.0.113.10',
+        customer_phone: '5511988887777',
+        external_id: 'web_customer_123'
     });
     await new Promise(resolve => receiver.close(resolve));
 
@@ -108,6 +129,9 @@ async function main() {
     assert.strictEqual(receivedBody.get('ep.transaction_id'), '98765');
     assert.strictEqual(receivedBody.get('ep.x-fb-ck-fbp'), 'fb.1.123.456');
     assert.strictEqual(receivedBody.get('ep.x-fb-ud-em'), 'cliente@example.com');
+    assert.strictEqual(receivedBody.get('ep.x-fb-ud-ph'), '5511988887777');
+    assert.strictEqual(receivedBody.get('ep.x-fb-ud-external_id'), 'web_customer_123');
+    assert.strictEqual(receivedBody.get('ep.x-fb-ud-country'), 'br');
     assert.strictEqual(capturedRequest.headers['x-forwarded-for'], '203.0.113.10');
 
     await fs.promises.rm(testRuntimeDir, { recursive: true, force: true });

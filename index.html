@@ -1092,6 +1092,48 @@
         </div>
     </section>
 
+    <!-- WhatsApp de entrega: coletado somente ao iniciar o checkout -->
+    <div id="whatsapp-checkout-modal" role="dialog" aria-modal="true" aria-labelledby="whatsapp-modal-title"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300 backdrop-blur-md bg-black/70">
+        <div class="relative w-full max-w-md rounded-3xl border border-green-500/25 bg-dark-900 p-6 sm:p-8 shadow-2xl shadow-black/80 transform scale-95 transition-transform duration-300">
+            <button id="close-whatsapp-modal" type="button" aria-label="Fechar"
+                class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-zinc-400 transition-colors hover:text-white">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-500/15 text-green-400">
+                <svg class="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
+                </svg>
+            </div>
+
+            <h2 id="whatsapp-modal-title" class="pr-8 text-2xl font-black text-white">Em qual WhatsApp você quer receber seu ensaio?</h2>
+            <p class="mt-2 text-sm leading-relaxed text-zinc-400">Usaremos este número para enviar suas fotos e atualizações do pedido.</p>
+
+            <form id="whatsapp-checkout-form" class="mt-6" novalidate>
+                <label for="checkout-whatsapp" class="mb-2 block text-sm font-bold text-zinc-200">WhatsApp com DDD</label>
+                <div class="flex overflow-hidden rounded-xl border border-zinc-700 bg-dark-950 transition focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500/20">
+                    <span class="flex items-center border-r border-zinc-700 px-4 text-sm font-semibold text-zinc-400">+55</span>
+                    <input id="checkout-whatsapp" name="whatsapp" type="tel" inputmode="numeric" autocomplete="tel-national"
+                        maxlength="16" placeholder="(11) 99999-9999" required
+                        class="min-w-0 flex-1 bg-transparent px-4 py-4 text-base text-white outline-none placeholder:text-zinc-600">
+                </div>
+                <p id="whatsapp-error" class="mt-2 hidden text-sm font-medium text-red-400">Digite um WhatsApp válido com DDD.</p>
+                <p class="mt-3 text-xs leading-relaxed text-zinc-500">Seus dados serão usados para processar e entregar este pedido. O pagamento continuará no ambiente seguro do Mercado Pago.</p>
+
+                <button id="continue-checkout-btn" type="submit"
+                    class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-green-500/20 transition hover:scale-[1.01] hover:shadow-green-500/35">
+                    Continuar para o pagamento
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- ===================================================================
          PORTFOLIO DETAIL MODAL
          =================================================================== -->
@@ -1177,117 +1219,196 @@
         (function () {
             var checkoutButtons = document.querySelectorAll('.package-checkout-btn');
             var loadingEl = document.getElementById('mp-loading');
+            var whatsappModal = document.getElementById('whatsapp-checkout-modal');
+            var whatsappForm = document.getElementById('whatsapp-checkout-form');
+            var whatsappInput = document.getElementById('checkout-whatsapp');
+            var whatsappError = document.getElementById('whatsapp-error');
+            var closeWhatsappModalBtn = document.getElementById('close-whatsapp-modal');
+            var pendingCheckoutButton = null;
+
+            function normalizePhone(value) {
+                var digits = String(value || '').replace(/\D/g, '').replace(/^0+/, '');
+                if (digits.indexOf('55') === 0 && (digits.length === 12 || digits.length === 13)) {
+                    digits = digits.slice(2);
+                }
+                if (!/^[1-9]{2}[2-9]\d{7,8}$/.test(digits)) return '';
+                return '55' + digits;
+            }
+
+            function formatPhone(value) {
+                var digits = String(value || '').replace(/\D/g, '').slice(0, 11);
+                if (digits.length <= 2) return digits ? '(' + digits : '';
+                if (digits.length <= 6) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2);
+                if (digits.length <= 10) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 6) + '-' + digits.slice(6);
+                return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 7) + '-' + digits.slice(7);
+            }
+
+            function getExternalId() {
+                var storageKey = 'studioai_external_id';
+                var existing = localStorage.getItem(storageKey);
+                if (existing) return existing;
+                var randomPart = window.crypto && window.crypto.randomUUID
+                    ? window.crypto.randomUUID()
+                    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+                var externalId = 'web_' + randomPart;
+                localStorage.setItem(storageKey, externalId);
+                return externalId;
+            }
+
+            function openWhatsappModal(btn) {
+                pendingCheckoutButton = btn;
+                whatsappError.classList.add('hidden');
+                var savedPhone = sessionStorage.getItem('studioai_whatsapp') || '';
+                whatsappInput.value = formatPhone(savedPhone.replace(/^55/, ''));
+                whatsappModal.classList.remove('opacity-0', 'pointer-events-none');
+                whatsappModal.querySelector(':scope > div').classList.remove('scale-95');
+                document.body.style.overflow = 'hidden';
+                setTimeout(function () { whatsappInput.focus(); }, 100);
+            }
+
+            function closeWhatsappModal() {
+                whatsappModal.classList.add('opacity-0', 'pointer-events-none');
+                whatsappModal.querySelector(':scope > div').classList.add('scale-95');
+                document.body.style.overflow = '';
+                pendingCheckoutButton = null;
+            }
+
+            function startCheckout(btn, whatsapp, externalId) {
+                var packageId = btn.getAttribute('data-package-id');
+                var title = btn.getAttribute('data-package-title');
+                var price = parseFloat(btn.getAttribute('data-package-price'));
+                sessionStorage.setItem('pending_payment_price', price);
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({ event: 'initiate_checkout', value: price, item_name: title, currency: 'BRL' });
+
+                window.dataLayer.push({
+                    'event': 'initiate_checkout_mercadopago',
+                    'cta_id': btn.id || ('package-btn-' + packageId),
+                    'package_id': packageId,
+                    'package_title': title,
+                    'package_price': price,
+                    'timestamp': new Date().toISOString()
+                });
+                console.log('[Tracking] initiate_checkout_mercadopago disparado para o pacote:', packageId);
+
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                if (loadingEl) loadingEl.classList.remove('hidden');
+
+                var urlParams = new URLSearchParams(window.location.search);
+                var attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'fbclid'];
+                attributionKeys.forEach(function (key) {
+                    var currentValue = urlParams.get(key);
+                    if (currentValue) localStorage.setItem(key, currentValue);
+                });
+
+                var utms = {
+                    utm_source: urlParams.get('utm_source') || localStorage.getItem('utm_source') || '',
+                    utm_medium: urlParams.get('utm_medium') || localStorage.getItem('utm_medium') || '',
+                    utm_campaign: urlParams.get('utm_campaign') || localStorage.getItem('utm_campaign') || '',
+                    utm_content: urlParams.get('utm_content') || localStorage.getItem('utm_content') || '',
+                    utm_term: urlParams.get('utm_term') || localStorage.getItem('utm_term') || '',
+                    src: urlParams.get('src') || localStorage.getItem('src') || ''
+                };
+
+                function cookieValue(name) {
+                    var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
+                    return match ? decodeURIComponent(match[1]) : '';
+                }
+
+                var fbclid = urlParams.get('fbclid') || localStorage.getItem('fbclid') || '';
+                var fbc = cookieValue('_fbc');
+                if (!fbc && fbclid) fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+                var gaCookie = cookieValue('_ga');
+                var gaParts = gaCookie ? gaCookie.split('.') : [];
+                var tracking = {
+                    fbp: cookieValue('_fbp'),
+                    fbc: fbc,
+                    ga_client_id: gaParts.length >= 4 ? gaParts.slice(-2).join('.') : '',
+                    page_location: window.location.href
+                };
+
+                fetch('/create-preference', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        packageId: packageId,
+                        title: title,
+                        price: price,
+                        utms: utms,
+                        tracking: tracking,
+                        customer: {
+                            whatsapp: whatsapp,
+                            external_id: externalId
+                        }
+                    })
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            if (!res.ok) throw new Error(data.error || 'Erro ao criar pagamento');
+                            return data;
+                        });
+                    })
+                    .then(function (data) {
+                        if (data.id) {
+                            runtimeConfigPromise.then(function (config) {
+                                if (!config.mp_public_key) throw new Error('MP_PUBLIC_KEY não configurada');
+                                var mp = new MercadoPago(config.mp_public_key, { locale: 'pt-BR' });
+                                mp.checkout({ preference: { id: data.id }, autoOpen: true });
+                            }).catch(function (configError) {
+                                console.error('[MP] Configuração inválida:', configError);
+                                if (data.init_point) window.location.href = data.init_point;
+                                else alert('Checkout temporariamente indisponível. Tente novamente.');
+                            });
+                        } else if (data.init_point) {
+                            window.location.href = data.init_point;
+                        } else {
+                            throw new Error('Preferência de pagamento inválida');
+                        }
+                    })
+                    .catch(function (err) {
+                        console.error('[MP] Erro:', err);
+                        alert(err.message || 'Erro de conexão. Tente novamente ou use o WhatsApp.');
+                    })
+                    .finally(function () {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        if (loadingEl) loadingEl.classList.add('hidden');
+                    });
+            }
 
             checkoutButtons.forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    var packageId = btn.getAttribute('data-package-id');
-                    var title = btn.getAttribute('data-package-title');
-                    var price = parseFloat(btn.getAttribute('data-package-price'));
-                    sessionStorage.setItem('pending_payment_price', price);
-                    window.dataLayer = window.dataLayer || [];
-                    window.dataLayer.push({ event: 'initiate_checkout', value: price, item_name: title, currency: 'BRL' });
-
-                    // Tracking
-                    window.dataLayer = window.dataLayer || [];
-                    window.dataLayer.push({
-                        'event': 'initiate_checkout_mercadopago',
-                        'cta_id': btn.id || ('package-btn-' + packageId),
-                        'package_id': packageId,
-                        'package_title': title,
-                        'package_price': price,
-                        'timestamp': new Date().toISOString()
-                    });
-                    console.log('[Tracking] initiate_checkout_mercadopago disparado para o pacote:', packageId);
-
-                    // Show loading & disable button
-                    btn.disabled = true;
-                    btn.style.opacity = '0.6';
-                    if (loadingEl) {
-                        loadingEl.classList.remove('hidden');
-                    }
-
-                    // Captura de atribuição: usada no dashboard da UTMify e no Purchase server-side.
-                    var urlParams = new URLSearchParams(window.location.search);
-                    var attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'fbclid'];
-                    attributionKeys.forEach(function (key) {
-                        var currentValue = urlParams.get(key);
-                        if (currentValue) localStorage.setItem(key, currentValue);
-                    });
-
-                    var utms = {
-                        utm_source: urlParams.get('utm_source') || localStorage.getItem('utm_source') || '',
-                        utm_medium: urlParams.get('utm_medium') || localStorage.getItem('utm_medium') || '',
-                        utm_campaign: urlParams.get('utm_campaign') || localStorage.getItem('utm_campaign') || '',
-                        utm_content: urlParams.get('utm_content') || localStorage.getItem('utm_content') || '',
-                        utm_term: urlParams.get('utm_term') || localStorage.getItem('utm_term') || '',
-                        src: urlParams.get('src') || localStorage.getItem('src') || ''
-                    };
-
-                    function cookieValue(name) {
-                        var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
-                        return match ? decodeURIComponent(match[1]) : '';
-                    }
-
-                    var fbclid = urlParams.get('fbclid') || localStorage.getItem('fbclid') || '';
-                    var fbc = cookieValue('_fbc');
-                    if (!fbc && fbclid) fbc = 'fb.1.' + Date.now() + '.' + fbclid;
-                    var gaCookie = cookieValue('_ga');
-                    var gaParts = gaCookie ? gaCookie.split('.') : [];
-                    var tracking = {
-                        fbp: cookieValue('_fbp'),
-                        fbc: fbc,
-                        ga_client_id: gaParts.length >= 4 ? gaParts.slice(-2).join('.') : '',
-                        page_location: window.location.href
-                    };
-
-                    // Create preference on backend with package details and UTM parameters
-                    fetch('/create-preference', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            packageId: packageId,
-                            title: title,
-                            price: price,
-                            utms: utms,
-                            tracking: tracking
-                        })
-                    })
-                        .then(function (res) { return res.json(); })
-                        .then(function (data) {
-                            if (data.id) {
-                                // Open Mercado Pago checkout
-                                runtimeConfigPromise.then(function (config) {
-                                    if (!config.mp_public_key) throw new Error('MP_PUBLIC_KEY não configurada');
-                                    var mp = new MercadoPago(config.mp_public_key, { locale: 'pt-BR' });
-                                    mp.checkout({
-                                        preference: { id: data.id },
-                                        autoOpen: true,
-                                    });
-                                }).catch(function (configError) {
-                                    console.error('[MP] Configuração inválida:', configError);
-                                    alert('Checkout temporariamente indisponível. Tente novamente.');
-                                });
-                            } else {
-                                // Fallback: redirect to init_point
-                                if (data.init_point) {
-                                    window.location.href = data.init_point;
-                                } else {
-                                    alert('Erro ao criar pagamento. Tente novamente ou use o WhatsApp.');
-                                }
-                            }
-                        })
-                        .catch(function (err) {
-                            console.error('[MP] Erro:', err);
-                            alert('Erro de conexão. Tente novamente ou use o WhatsApp.');
-                        })
-                        .finally(function () {
-                            btn.disabled = false;
-                            btn.style.opacity = '1';
-                            if (loadingEl) {
-                                loadingEl.classList.add('hidden');
-                            }
-                        });
+                    openWhatsappModal(btn);
                 });
+            });
+
+            whatsappInput.addEventListener('input', function () {
+                whatsappInput.value = formatPhone(whatsappInput.value);
+                whatsappError.classList.add('hidden');
+            });
+
+            whatsappForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var whatsapp = normalizePhone(whatsappInput.value);
+                if (!whatsapp || !pendingCheckoutButton) {
+                    whatsappError.classList.remove('hidden');
+                    whatsappInput.focus();
+                    return;
+                }
+
+                var selectedButton = pendingCheckoutButton;
+                sessionStorage.setItem('studioai_whatsapp', whatsapp);
+                closeWhatsappModal();
+                startCheckout(selectedButton, whatsapp, getExternalId());
+            });
+
+            closeWhatsappModalBtn.addEventListener('click', closeWhatsappModal);
+            whatsappModal.addEventListener('click', function (event) {
+                if (event.target === whatsappModal) closeWhatsappModal();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !whatsappModal.classList.contains('pointer-events-none')) closeWhatsappModal();
             });
         })();
 

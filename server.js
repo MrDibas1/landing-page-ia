@@ -56,6 +56,21 @@ function getRequestIp(req) {
     return req.ip || req.socket?.remoteAddress || '';
 }
 
+function normalizeBrazilPhone(value) {
+    let digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('0')) digits = digits.replace(/^0+/, '');
+    if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+    if (!/^55[1-9]{2}[2-9]\d{7,8}$/.test(digits)) return '';
+    return digits;
+}
+
+function normalizeExternalId(value) {
+    return String(value || '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_.-]/g, '')
+        .slice(0, 128);
+}
+
 async function saveAttribution(externalReference, data) {
     const dir = await ensureRuntimeDir('attribution');
     const file = path.join(dir, `${safeFilePart(externalReference)}.json`);
@@ -150,7 +165,13 @@ function requestRaw(urlString, { method = 'POST', headers = {}, body = '' } = {}
 // ============================================================
 app.post('/create-preference', async (req, res) => {
     try {
-        const { packageId, title, price, utms, tracking } = req.body;
+        const { packageId, title, price, utms, tracking, customer } = req.body;
+        const customerPhone = normalizeBrazilPhone(customer?.whatsapp);
+        const externalId = normalizeExternalId(customer?.external_id);
+
+        if (!customerPhone) {
+            return res.status(400).json({ error: 'Informe um WhatsApp válido com DDD' });
+        }
 
         // Tabela de preços oficiais no back-end para evitar spoofing/adulteração no front-end
         const packagePrices = {
@@ -188,6 +209,12 @@ app.post('/create-preference', async (req, res) => {
             statement_descriptor: 'STUDIOAI ENSAIO',
             external_reference: externalReference,
             notification_url: process.env.WEBHOOK_URL || undefined,
+            payer: {
+                phone: {
+                    area_code: customerPhone.slice(2, 4),
+                    number: customerPhone.slice(4)
+                }
+            },
             // Guardar parâmetros UTM de rastreamento no Mercado Pago para o UTMify
             metadata: {
                 package_id: itemId,
@@ -202,6 +229,8 @@ app.post('/create-preference', async (req, res) => {
                 fbp: tracking?.fbp || '',
                 fbc: tracking?.fbc || '',
                 ga_client_id: tracking?.ga_client_id || '',
+                customer_phone: customerPhone,
+                external_id: externalId,
             },
             // Expiração (24 horas)
             expires: true,
@@ -220,6 +249,8 @@ app.post('/create-preference', async (req, res) => {
             ga_client_id: tracking?.ga_client_id || '',
             fbp: tracking?.fbp || '',
             fbc: tracking?.fbc || '',
+            customer_phone: customerPhone,
+            external_id: externalId,
             utms: {
                 utm_source: utms?.utm_source || '',
                 utm_medium: utms?.utm_medium || '',
@@ -283,7 +314,9 @@ function paymentTracking(payment, attribution) {
         src: savedUtms.src || metadata.src || '',
         fbp: attribution.fbp || metadata.fbp || '',
         fbc: attribution.fbc || metadata.fbc || '',
-        ga_client_id: attribution.ga_client_id || metadata.ga_client_id || ''
+        ga_client_id: attribution.ga_client_id || metadata.ga_client_id || '',
+        customer_phone: normalizeBrazilPhone(attribution.customer_phone || metadata.customer_phone || ''),
+        external_id: normalizeExternalId(attribution.external_id || metadata.external_id || '')
     };
 }
 
@@ -314,7 +347,7 @@ async function sendUtmifySale(payment, attribution) {
         customer: {
             name: `${payment.payer?.first_name || ''} ${payment.payer?.last_name || ''}`.trim() || 'Cliente',
             email: payment.payer?.email || '',
-            phone: payment.payer?.phone?.number || '',
+            phone: tracking.customer_phone || normalizeBrazilPhone(payment.payer?.phone?.number || ''),
             document: payment.payer?.identification?.number || '',
             country: 'BR'
         },
@@ -382,9 +415,12 @@ async function sendPurchaseToGtmServer(payment, attribution) {
     if (tracking.utm_content) params.set('ep.utm_content', tracking.utm_content);
     if (tracking.utm_term) params.set('ep.utm_term', tracking.utm_term);
     if (payment.payer?.email) params.set('ep.x-fb-ud-em', payment.payer.email);
-    if (payment.payer?.phone?.number) params.set('ep.x-fb-ud-ph', payment.payer.phone.number);
+    const customerPhone = tracking.customer_phone || normalizeBrazilPhone(payment.payer?.phone?.number || '');
+    if (customerPhone) params.set('ep.x-fb-ud-ph', customerPhone);
     if (payment.payer?.first_name) params.set('ep.x-fb-ud-fn', payment.payer.first_name);
     if (payment.payer?.last_name) params.set('ep.x-fb-ud-ln', payment.payer.last_name);
+    if (tracking.external_id) params.set('ep.x-fb-ud-external_id', tracking.external_id);
+    params.set('ep.x-fb-ud-country', 'br');
     params.set('ep.x-fb-cd-content_ids', metadata.package_id || 'premium');
     params.set('ep.x-fb-cd-content_name', metadata.package_title || 'Ensaio Fotográfico por IA');
     params.set('ep.x-fb-cd-content_type', 'product');
@@ -454,13 +490,16 @@ app.get('/payment-details/:id', async (req, res) => {
             return res.status(400).json({ error: 'Pagamento não está aprovado' });
         }
 
+        const attribution = await loadAttribution(payment.external_reference);
+        const tracking = paymentTracking(payment, attribution);
+
         // Extrair dados do comprador
         const first_name = payment.payer?.first_name || '';
         const last_name = payment.payer?.last_name || '';
         const email = payment.payer?.email || '';
 
         // Formatar telefone (código do país + DDD + número)
-        let phone = payment.payer?.phone?.number || '';
+        let phone = tracking.customer_phone || payment.payer?.phone?.number || '';
         const areaCode = payment.payer?.phone?.area_code || '';
         if (areaCode && phone && !phone.includes(areaCode)) {
             phone = `${areaCode}${phone}`;
@@ -491,7 +530,9 @@ app.get('/payment-details/:id', async (req, res) => {
                 email: email,
                 phone: phone,
                 first_name: first_name,
-                last_name: last_name
+                last_name: last_name,
+                external_id: tracking.external_id || '',
+                country: 'br'
             }
         });
     } catch (error) {
@@ -526,6 +567,8 @@ module.exports = {
     app,
     getPurchaseEventId,
     paymentTracking,
+    normalizeBrazilPhone,
+    normalizeExternalId,
     runIdempotent,
     sendPurchaseToGtmServer,
     sendUtmifySale
