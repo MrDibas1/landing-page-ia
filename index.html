@@ -1168,7 +1168,11 @@
         // Mercado Pago Checkout Pro
         // ============================================================
         // 🔄 SUBSTITUA pela sua PUBLIC_KEY real
-        var MP_PUBLIC_KEY = 'APP_USR-2d95da37-6422-4dd9-8a8b-1e6fe443c0a9';
+        var runtimeConfigPromise = fetch('/config')
+            .then(function (response) {
+                if (!response.ok) throw new Error('Configuração indisponível');
+                return response.json();
+            });
 
         (function () {
             var checkoutButtons = document.querySelectorAll('.package-checkout-btn');
@@ -1252,10 +1256,16 @@
                         .then(function (data) {
                             if (data.id) {
                                 // Open Mercado Pago checkout
-                                var mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-                                mp.checkout({
-                                    preference: { id: data.id },
-                                    autoOpen: true,
+                                runtimeConfigPromise.then(function (config) {
+                                    if (!config.mp_public_key) throw new Error('MP_PUBLIC_KEY não configurada');
+                                    var mp = new MercadoPago(config.mp_public_key, { locale: 'pt-BR' });
+                                    mp.checkout({
+                                        preference: { id: data.id },
+                                        autoOpen: true,
+                                    });
+                                }).catch(function (configError) {
+                                    console.error('[MP] Configuração inválida:', configError);
+                                    alert('Checkout temporariamente indisponível. Tente novamente.');
                                 });
                             } else {
                                 // Fallback: redirect to init_point

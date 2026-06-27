@@ -24,6 +24,13 @@ app.use(express.json());
 // Servir arquivos estáticos (HTML, CSS, JS, imagens)
 app.use(express.static(path.join(__dirname)));
 
+// Configuração pública necessária ao SDK do Mercado Pago no navegador.
+app.get('/config', (req, res) => {
+    res.json({
+        mp_public_key: process.env.MP_PUBLIC_KEY || ''
+    });
+});
+
 // ============================================================
 // Mercado Pago — Configuração
 // ============================================================
