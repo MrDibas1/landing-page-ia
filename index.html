@@ -1350,6 +1350,9 @@
                         });
                     })
                     .then(function (data) {
+                        if (data.checkout_token) {
+                            sessionStorage.setItem('pending_checkout_token', data.checkout_token);
+                        }
                         if (data.id) {
                             runtimeConfigPromise.then(function (config) {
                                 if (!config.mp_public_key) throw new Error('MP_PUBLIC_KEY não configurada');
