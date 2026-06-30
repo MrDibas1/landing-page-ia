@@ -231,7 +231,10 @@
 
             if (paymentId) {
                 // Buscar dados do comprador no back-end
-                fetch('/payment-details/' + paymentId)
+                var checkoutToken = sessionStorage.getItem('pending_checkout_token') || '';
+                fetch('/payment-details/' + encodeURIComponent(paymentId), {
+                    headers: { 'X-Checkout-Token': checkoutToken }
+                })
                     .then(function(res) {
                         if (!res.ok) throw new Error('Status HTTP ' + res.status);
                         return res.json();
@@ -250,6 +253,7 @@
 
                         // Disparar somente depois de o backend confirmar o pagamento no Mercado Pago.
                         firePurchaseEvent(data);
+                        sessionStorage.removeItem('pending_checkout_token');
 
                         // 2. Atualizar link do WhatsApp com o nome do comprador
                         var chosenStyle = localStorage.getItem('chosen_style');

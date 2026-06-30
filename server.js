@@ -5,8 +5,13 @@
 
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const { MercadoPagoConfig, Preference } = require('mercadopago');
+const {
+    MercadoPagoConfig,
+    Preference,
+    Payment,
+    WebhookSignatureValidator,
+    InvalidWebhookSignatureError
+} = require('mercadopago');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -15,14 +20,33 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const RUNTIME_DIR = process.env.RUNTIME_DATA_DIR || path.join(__dirname, '.runtime');
 
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
 // ============================================================
 // Middleware
 // ============================================================
-app.use(cors());
-app.use(express.json());
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    next();
+});
+app.use(express.json({ limit: '64kb' }));
 
-// Servir arquivos estáticos (HTML, CSS, JS, imagens)
-app.use(express.static(path.join(__dirname)));
+// A aplicação e a API usam a mesma origem. Servir somente os ativos públicos
+// evita expor server.js, package.json, testes e arquivos operacionais.
+app.get(['/', '/index.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/success.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'success.html'));
+});
+app.use('/img', express.static(path.join(__dirname, 'img'), {
+    dotfiles: 'deny',
+    fallthrough: false,
+    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0
+}));
 
 // Configuração pública necessária ao SDK do Mercado Pago no navegador.
 app.get('/config', (req, res) => {
@@ -51,8 +75,6 @@ async function ensureRuntimeDir(subdir) {
 }
 
 function getRequestIp(req) {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) return String(forwarded).split(',')[0].trim();
     return req.ip || req.socket?.remoteAddress || '';
 }
 
@@ -69,6 +91,54 @@ function normalizeExternalId(value) {
         .trim()
         .replace(/[^a-zA-Z0-9_.-]/g, '')
         .slice(0, 128);
+}
+
+function hashCheckoutToken(value) {
+    return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+}
+
+function checkoutTokenMatches(value, expectedHash) {
+    if (!value || !expectedHash) return false;
+    const actual = Buffer.from(hashCheckoutToken(value), 'hex');
+    const expected = Buffer.from(String(expectedHash), 'hex');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+}
+
+function getWebhookDataId(req) {
+    return String(req.query['data.id'] || req.query.data_id || req.body?.data?.id || '').trim();
+}
+
+function getWebhookNotificationUrl() {
+    if (!process.env.WEBHOOK_URL) return undefined;
+    const url = new URL(process.env.WEBHOOK_URL);
+    url.searchParams.set('source_news', 'webhooks');
+    return url.toString();
+}
+
+function validateMercadoPagoWebhook(req, res, next) {
+    const secret = process.env.MP_WEBHOOK_SECRET;
+    if (!secret) {
+        console.error('[Webhook] MP_WEBHOOK_SECRET não configurado');
+        return res.sendStatus(503);
+    }
+
+    try {
+        WebhookSignatureValidator.validate({
+            xSignature: req.headers['x-signature'],
+            xRequestId: req.headers['x-request-id'],
+            dataId: getWebhookDataId(req),
+            secret,
+            toleranceSeconds: 300
+        });
+        return next();
+    } catch (error) {
+        if (error instanceof InvalidWebhookSignatureError) {
+            console.warn('[Webhook] Assinatura inválida:', error.reason);
+            return res.sendStatus(401);
+        }
+        console.error('[Webhook] Falha ao validar assinatura:', error.message);
+        return res.sendStatus(400);
+    }
 }
 
 async function saveAttribution(externalReference, data) {
@@ -186,6 +256,7 @@ app.post('/create-preference', async (req, res) => {
         const itemPrice = packagePrices[itemId] || price || 29.99;
 
         const externalReference = `order_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+        const checkoutToken = crypto.randomBytes(32).toString('base64url');
         const preferenceData = {
             items: [
                 {
@@ -195,7 +266,6 @@ app.post('/create-preference', async (req, res) => {
                     quantity: 1,
                     unit_price: Number(itemPrice),
                     currency_id: 'BRL',
-                    picture_url: 'https://i.imgur.com/placeholder.png',
                 },
             ],
             // URLs de retorno
@@ -208,13 +278,8 @@ app.post('/create-preference', async (req, res) => {
             // Configurações adicionais
             statement_descriptor: 'STUDIOAI ENSAIO',
             external_reference: externalReference,
-            notification_url: process.env.WEBHOOK_URL || undefined,
-            payer: {
-                phone: {
-                    area_code: customerPhone.slice(2, 4),
-                    number: customerPhone.slice(4)
-                }
-            },
+            // Força Webhooks assinados em vez do IPN legado.
+            notification_url: getWebhookNotificationUrl(),
             // Guardar parâmetros UTM de rastreamento no Mercado Pago para o UTMify
             metadata: {
                 package_id: itemId,
@@ -232,16 +297,13 @@ app.post('/create-preference', async (req, res) => {
                 customer_phone: customerPhone,
                 external_id: externalId,
             },
-            // Expiração (24 horas)
-            expires: true,
-            expiration_date_from: new Date().toISOString(),
-            expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         };
 
         const preference = await preferenceClient.create({ body: preferenceData });
 
         await saveAttribution(externalReference, {
             external_reference: externalReference,
+            checkout_token_hash: hashCheckoutToken(checkoutToken),
             created_at: new Date().toISOString(),
             client_ip: getRequestIp(req),
             user_agent: req.headers['user-agent'] || '',
@@ -269,12 +331,12 @@ app.post('/create-preference', async (req, res) => {
             init_point: preference.init_point,
             sandbox_init_point: preference.sandbox_init_point,
             external_reference: externalReference,
+            checkout_token: checkoutToken,
         });
     } catch (error) {
         console.error('[Mercado Pago] Erro ao criar preferência:', error);
         res.status(500).json({
             error: 'Erro ao criar preferência de pagamento',
-            details: error.message,
         });
     }
 });
@@ -431,23 +493,26 @@ async function sendPurchaseToGtmServer(payment, attribution) {
         'Content-Length': Buffer.byteLength(body),
         'User-Agent': attribution.user_agent || 'StudioAI-MercadoPago-Webhook/1.0'
     };
+    if (process.env.GTM_SERVER_PREVIEW_HEADER) {
+        headers['X-Gtm-Server-Preview'] = process.env.GTM_SERVER_PREVIEW_HEADER.trim();
+    }
     if (attribution.client_ip) headers['X-Forwarded-For'] = attribution.client_ip;
 
     return requestRaw(endpoint.toString(), { headers, body });
 }
 
 // Webhook oficial: somente pagamento aprovado gera Purchase.
-app.post('/webhook', async (req, res) => {
-    const { action, type, data } = req.body || {};
+app.post('/webhook', validateMercadoPagoWebhook, async (req, res) => {
+    const { action, type } = req.body || {};
     const eventType = type || action;
     const isPaymentEvent = eventType === 'payment' || eventType === 'payment.updated' || action === 'payment.created';
-    if (!isPaymentEvent || !data?.id) return res.sendStatus(200);
+    const dataId = getWebhookDataId(req);
+    if (!isPaymentEvent || !dataId) return res.sendStatus(200);
 
     try {
-        const { Payment } = require('mercadopago');
-        const payment = await new Payment(mpClient).get({ id: data.id });
+        const payment = await new Payment(mpClient).get({ id: dataId });
         if (payment.status !== 'approved') {
-            console.log(`[Webhook] Pagamento ${data.id} ignorado com status ${payment.status}`);
+            console.log(`[Webhook] Pagamento ${dataId} ignorado com status ${payment.status}`);
             return res.sendStatus(200);
         }
 
@@ -481,7 +546,6 @@ app.get('/payment-details/:id', async (req, res) => {
     }
 
     try {
-        const { Payment } = require('mercadopago');
         const paymentClient = new Payment(mpClient);
         const payment = await paymentClient.get({ id: paymentId });
 
@@ -491,6 +555,10 @@ app.get('/payment-details/:id', async (req, res) => {
         }
 
         const attribution = await loadAttribution(payment.external_reference);
+        const checkoutToken = req.headers['x-checkout-token'];
+        if (!checkoutTokenMatches(checkoutToken, attribution.checkout_token_hash)) {
+            return res.status(403).json({ error: 'Acesso ao pagamento não autorizado' });
+        }
         const tracking = paymentTracking(payment, attribution);
 
         // Extrair dados do comprador
@@ -537,7 +605,7 @@ app.get('/payment-details/:id', async (req, res) => {
         });
     } catch (error) {
         console.error(`[Server] Erro ao buscar detalhes do pagamento ${paymentId}:`, error);
-        res.status(500).json({ error: 'Erro ao buscar detalhes do pagamento', details: error.message });
+        res.status(500).json({ error: 'Erro ao buscar detalhes do pagamento' });
     }
 });
 
@@ -549,6 +617,8 @@ app.get('/health', (req, res) => {
         status: 'ok',
         timestamp: new Date().toISOString(),
         mp_configured: !!process.env.MP_ACCESS_TOKEN && process.env.MP_ACCESS_TOKEN !== 'SEU_ACCESS_TOKEN_AQUI',
+        webhook_signature_configured: !!process.env.MP_WEBHOOK_SECRET,
+        persistent_runtime_configured: path.isAbsolute(RUNTIME_DIR),
     });
 });
 
@@ -569,6 +639,11 @@ module.exports = {
     paymentTracking,
     normalizeBrazilPhone,
     normalizeExternalId,
+    hashCheckoutToken,
+    checkoutTokenMatches,
+    getWebhookDataId,
+    getWebhookNotificationUrl,
+    validateMercadoPagoWebhook,
     runIdempotent,
     sendPurchaseToGtmServer,
     sendUtmifySale

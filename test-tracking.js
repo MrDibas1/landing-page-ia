@@ -2,15 +2,22 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const crypto = require('crypto');
 
 const testRuntimeDir = path.join(__dirname, '.runtime-test');
 process.env.RUNTIME_DATA_DIR = testRuntimeDir;
 
 const {
+    app,
     getPurchaseEventId,
     paymentTracking,
     normalizeBrazilPhone,
     normalizeExternalId,
+    hashCheckoutToken,
+    checkoutTokenMatches,
+    getWebhookDataId,
+    getWebhookNotificationUrl,
+    validateMercadoPagoWebhook,
     runIdempotent,
     sendPurchaseToGtmServer
 } = require('./server');
@@ -31,12 +38,63 @@ async function main() {
     assert.ok(indexHtml.includes('customer: {'), 'O WhatsApp deve ser enviado dentro do contrato customer');
     assert.ok(indexHtml.includes("var storageKey = 'studioai_external_id'"), 'O external_id deve usar uma chave estável');
     assert.ok(indexHtml.includes('localStorage.setItem(storageKey, externalId)'), 'O external_id deve persistir no navegador');
+    assert.ok(indexHtml.includes("sessionStorage.setItem('pending_checkout_token'"), 'O checkout deve guardar o token efêmero');
+    assert.ok(successHtml.includes("'X-Checkout-Token': checkoutToken"), 'A página de sucesso deve autenticar a consulta do pagamento');
 
     assert.strictEqual(getPurchaseEventId(12345), 'mp_12345');
     assert.strictEqual(normalizeBrazilPhone('(11) 99999-9999'), '5511999999999');
     assert.strictEqual(normalizeBrazilPhone('+55 11 99999-9999'), '5511999999999');
     assert.strictEqual(normalizeBrazilPhone('123'), '');
     assert.strictEqual(normalizeExternalId(' web_cliente-123! '), 'web_cliente-123');
+    const checkoutToken = 'checkout-token-seguro';
+    const checkoutHash = hashCheckoutToken(checkoutToken);
+    assert.ok(checkoutTokenMatches(checkoutToken, checkoutHash));
+    assert.ok(!checkoutTokenMatches('token-incorreto', checkoutHash));
+    assert.strictEqual(
+        getWebhookDataId({ query: { 'data.id': '12345' }, body: {} }),
+        '12345'
+    );
+
+    const previousWebhookUrl = process.env.WEBHOOK_URL;
+    process.env.WEBHOOK_URL = 'https://ai.estudiofocus.online/webhook';
+    assert.strictEqual(
+        getWebhookNotificationUrl(),
+        'https://ai.estudiofocus.online/webhook?source_news=webhooks'
+    );
+    if (previousWebhookUrl === undefined) delete process.env.WEBHOOK_URL;
+    else process.env.WEBHOOK_URL = previousWebhookUrl;
+
+    const previousWebhookSecret = process.env.MP_WEBHOOK_SECRET;
+    const webhookSecret = 'test-webhook-secret';
+    const webhookDataId = '998877';
+    const webhookRequestId = 'request-test-123';
+    const webhookTimestamp = String(Date.now());
+    const manifest = `id:${webhookDataId};request-id:${webhookRequestId};ts:${webhookTimestamp};`;
+    const webhookHash = crypto.createHmac('sha256', webhookSecret).update(manifest).digest('hex');
+    process.env.MP_WEBHOOK_SECRET = webhookSecret;
+
+    let nextCalls = 0;
+    const validRequest = {
+        query: { 'data.id': webhookDataId },
+        body: {},
+        headers: {
+            'x-signature': `ts=${webhookTimestamp},v1=${webhookHash}`,
+            'x-request-id': webhookRequestId
+        }
+    };
+    const validResponse = { sendStatus: code => { throw new Error(`Status inesperado: ${code}`); } };
+    validateMercadoPagoWebhook(validRequest, validResponse, () => { nextCalls += 1; });
+    assert.strictEqual(nextCalls, 1, 'Assinatura válida deve liberar o webhook');
+
+    let invalidStatus;
+    validateMercadoPagoWebhook(
+        { ...validRequest, headers: { ...validRequest.headers, 'x-signature': `ts=${webhookTimestamp},v1=invalid` } },
+        { sendStatus: code => { invalidStatus = code; } },
+        () => { throw new Error('Assinatura inválida não pode liberar o webhook'); }
+    );
+    assert.strictEqual(invalidStatus, 401, 'Assinatura inválida deve retornar 401');
+    if (previousWebhookSecret === undefined) delete process.env.MP_WEBHOOK_SECRET;
+    else process.env.MP_WEBHOOK_SECRET = previousWebhookSecret;
     assert.deepStrictEqual(
         paymentTracking(
             { metadata: { utm_source: 'metadata', fbp: 'fbp-meta' } },
@@ -133,6 +191,18 @@ async function main() {
     assert.strictEqual(receivedBody.get('ep.x-fb-ud-external_id'), 'web_customer_123');
     assert.strictEqual(receivedBody.get('ep.x-fb-ud-country'), 'br');
     assert.strictEqual(capturedRequest.headers['x-forwarded-for'], '203.0.113.10');
+
+    const appServer = await new Promise(resolve => {
+        const instance = app.listen(0, '127.0.0.1', () => resolve(instance));
+    });
+    const appPort = appServer.address().port;
+    const publicPage = await fetch(`http://127.0.0.1:${appPort}/index.html`);
+    const privateSource = await fetch(`http://127.0.0.1:${appPort}/server.js`);
+    const privatePackage = await fetch(`http://127.0.0.1:${appPort}/package.json`);
+    assert.strictEqual(publicPage.status, 200, 'A landing page deve continuar pública');
+    assert.strictEqual(privateSource.status, 404, 'server.js não pode ser servido publicamente');
+    assert.strictEqual(privatePackage.status, 404, 'package.json não pode ser servido publicamente');
+    await new Promise(resolve => appServer.close(resolve));
 
     await fs.promises.rm(testRuntimeDir, { recursive: true, force: true });
     console.log('Tracking tests: OK');

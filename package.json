@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "description": "Landing Page - Ensaios Fotográficos por IA com Mercado Pago Checkout Pro",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.19.0"
+  },
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
     "test:tracking": "node test-tracking.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mercadopago": "^2.0.15"
